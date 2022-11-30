@@ -1,10 +1,10 @@
-from bpy import types, context, ops, data
+from bpy import types, context, ops, data as D
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
 
 
 def unselect_object():
-    for o in data.objects:
+    for o in D.objects:
         o.select_set(False)
 
 
@@ -19,14 +19,14 @@ class Teamtool_compile(types.Operator):
                 found = c
 
         if (found == None):
-            found = data.collections.new("COMPILED")
+            found = D.collections.new("COMPILED")
             context.collection.children.link(found)
 
         for c in context.scene.collection.children_recursive:
             if (c.hide_render == False):
                 if (c.name != "COMPILED"):
                     dup_name_list = []
-                    o:types.Object
+                    o: types.Object
                     for o in c.objects:
                         if (o.hide_render == False):
                             dup_obj = o.copy()
@@ -35,12 +35,13 @@ class Teamtool_compile(types.Operator):
                             dup_name_list.append(dup_obj.name)
                     unselect_object()
                     for n in dup_name_list:
-                        data.objects[n].select_set(True)
+                        D.objects[n].select_set(True)
                     if (len(dup_name_list) > 0):
-                        context.view_layer.objects.active = data.objects[dup_name_list[0]]
+                        context.view_layer.objects.active = D.objects[dup_name_list[0]]
                         ops.object.convert(target='MESH')
                         ops.object.join()
                         context.active_object.name = c.name
+                        context.active_object.data.name = c.name
                         for m in context.active_object.material_slots:
                             context.active_object.active_material = m.material
                             ops.node.y_duplicate_yp_nodes(

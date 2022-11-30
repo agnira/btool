@@ -2,8 +2,6 @@
 
 from bpy import types, context
 from bpy.utils import register_class, unregister_class
-from .ui_operator import Teamtool_test
-
 
 class UI_PT_TTCompiler(types.Panel):
     bl_idname = "UI_PT_TTCompiler"
