@@ -12,7 +12,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 bl_info = {
-    "name" : "teamtool_compiler",
+    "name" : "Btool",
     "author" : "Agni Rakai Sahakarya",
     "description" : "",
     "blender" : (3, 3, 0),

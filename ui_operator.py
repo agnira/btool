@@ -1,18 +1,22 @@
-from bpy import types, context, ops, data as D
+import bpy
+from bpy import types, context, ops
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
 
 
 def unselect_object():
+    D = bpy.data
     for o in D.objects:
         o.select_set(False)
 
 
-class Teamtool_compile(types.Operator):
-    bl_idname = "teamtool.compiler_compile"
+class Btool_compile(types.Operator):
+    bl_idname = "btool.compile"
     bl_label = "Compile"
+    bl_description = "Compile finished project (please hide render unnecesary collection)"
 
     def execute(self, context: context):
+        D = bpy.data
         found: Collection = None
         for c in context.scene.collection.children_recursive:
             if (c.name == "COMPILED"):
@@ -20,7 +24,7 @@ class Teamtool_compile(types.Operator):
 
         if (found == None):
             found = D.collections.new("COMPILED")
-            context.collection.children.link(found)
+            context.scene.collection.children.link(found)
 
         for c in context.scene.collection.children_recursive:
             if (c.hide_render == False):
@@ -70,8 +74,20 @@ class Teamtool_compile(types.Operator):
         return {'FINISHED'}
 
 
+class Btool_rename_data(types.Operator):
+    bl_idname = "btool.rename_data"
+    bl_label = "Rename Data (Batch)"
+    bl_description = "Batch rename selected data to object name"
+
+    def execute(self, context: context):
+        o: types.Object
+        for o in context.selectable_objects:
+            o.data.name = o.name
+        return {'FINISHED'}
+
 classes = (
-    Teamtool_compile,
+    Btool_compile,
+    Btool_rename_data
 )
 
 
