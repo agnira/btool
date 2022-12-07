@@ -17,7 +17,8 @@ class UI_PT_BT(types.Panel):
         row.operator("btool.compile", text="Compile")
         row = layout.row(align=True)
         row.operator("btool.rename_data", text="Rename Data")
-
+        row = layout.row(align=True)
+        row.operator("btool.metarig_to_applied", text="Metarig To Applyed Rig")
 
 classes = (
     UI_PT_BT,

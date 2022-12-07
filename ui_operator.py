@@ -2,12 +2,14 @@ import bpy
 from bpy import types, context, ops
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
+from bpy.props import *
 
 
 def unselect_object():
-    D = bpy.data
-    for o in D.objects:
-        o.select_set(False)
+    # D = bpy.data
+    # for o in D.objects:
+    #     o.select_set(False)
+    ops.object.select_all(action='DESELECT')
 
 
 class Btool_compile(types.Operator):
@@ -85,9 +87,51 @@ class Btool_rename_data(types.Operator):
             o.data.name = o.name
         return {'FINISHED'}
 
+
+class Btool_metarig_to_applied(types.Operator):
+    bl_idname = "btool.metarig_to_applied"
+    bl_label = "Metarig to applied"
+    bl_description = "Move every bone position to applyed bone position"
+
+    metarig_object: StringProperty(
+        name="Metarig", description="Select metarig target")
+
+    @classmethod
+    def poll(cls, context: context):
+        return context.object and context.object.type in {'ARMATURE'}
+
+    def invoke(self, context, event):
+        if (context.object.name.find("APPLIED") == -1):
+            self.report({'ERROR'}, "Please select applied armature")
+            return {'CANCELLED'}
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context: context):
+        self.layout.prop_search(self, 'metarig_object', bpy.data, "armatures")
+
+    def execute(self, context: context):
+        ops.object.mode_set(mode="OBJECT")
+        unselect_object()
+        metarig = context.scene.objects[self.metarig_object]
+        metarig.select_set(True)
+        applied = context.scene.objects[context.active_object.name]
+        applied.select_set(True)
+        applied_armature = bpy.data.armatures[applied.data.name]
+        ops.object.mode_set(mode="EDIT")
+        bone: types.EditBone
+        for bone in bpy.data.armatures[self.metarig_object].edit_bones:
+            if (bone.name.find("heel") == -1):
+                bone.length = applied_armature.edit_bones["DEF-"+bone.name].length
+                bone.matrix = applied_armature.edit_bones["DEF-"+bone.name].matrix.copy()
+            if (bone.name.find("heel") == -1):
+                bone.head = applied_armature.edit_bones["DEF-"+bone.name].head
+        return {'FINISHED'}
+
+
 classes = (
     Btool_compile,
-    Btool_rename_data
+    Btool_rename_data,
+    Btool_metarig_to_applied
 )
 
 
