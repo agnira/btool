@@ -17,6 +17,16 @@ class Btool_compile(types.Operator):
     bl_label = "Compile"
     bl_description = "Compile finished project (please hide render unnecesary collection)"
 
+    remove_vertex_group: BoolProperty(
+        name="Remove vertex group", description="remove vertex group")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context: context):
+        self.layout.prop(self, "remove_vertex_group",
+                         text="Remove Vertex Group")
+
     def execute(self, context: context):
         D = bpy.data
         found: Collection = None
@@ -70,7 +80,8 @@ class Btool_compile(types.Operator):
                             ca_l.active_color_index = 0
                             ops.geometry.color_attribute_remove()
                         if (len(context.active_object.vertex_groups) > 0):
-                            ops.object.vertex_group_remove(all=True)
+                            if (self.remove_vertex_group):
+                                ops.object.vertex_group_remove(all=True)
                         c.hide_viewport = True
 
         return {'FINISHED'}
@@ -121,8 +132,10 @@ class Btool_metarig_to_applied(types.Operator):
         bone: types.EditBone
         for bone in bpy.data.armatures[self.metarig_object].edit_bones:
             if (bone.name.find("heel") == -1):
-                bone.length = applied_armature.edit_bones["DEF-"+bone.name].length
-                bone.matrix = applied_armature.edit_bones["DEF-"+bone.name].matrix.copy()
+                bone.length = applied_armature.edit_bones["DEF-" +
+                                                          bone.name].length
+                bone.matrix = applied_armature.edit_bones["DEF-" +
+                                                          bone.name].matrix.copy()
             if (bone.name.find("heel") == -1):
                 bone.head = applied_armature.edit_bones["DEF-"+bone.name].head
         return {'FINISHED'}
