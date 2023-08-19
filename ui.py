@@ -19,6 +19,8 @@ class UI_PT_BT(types.Panel):
         row.operator("btool.rename_data", text="Rename Data")
         row = layout.row(align=True)
         row.operator("btool.metarig_to_applied", text="Metarig To Applyed Rig")
+        row = layout.row(align=True)
+        row.operator("btool.create_cloth_bones", text="Cloth Bones Form Mesh")
 
 classes = (
     UI_PT_BT,
