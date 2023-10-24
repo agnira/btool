@@ -1,8 +1,10 @@
-import bpy
+import bpy, os
 from bpy import types, context, ops
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
 from bpy.props import *
+
+from bpy.props import CollectionProperty, StringProperty
 
 
 def unselect_object():
@@ -205,12 +207,55 @@ class Btool_create_cloth_bones(types.Operator):
         armature.select_set(True)
         context.view_layer.objects.active = armature
         return {'FINISHED'}
+    
+class Btool_import_mixamo_animations(bpy.types.Operator):
+    bl_idname = "btool.import_mixamo_animations"
+    bl_label = "Import mixamo Animations"
+
+    files: CollectionProperty(
+        type=bpy.types.OperatorFileListElement,
+        options={'HIDDEN', 'SKIP_SAVE'},
+    )
+    directory: StringProperty(
+        subtype='DIR_PATH',
+    )
+
+    def execute(self, context):
+        mixamoTarget = bpy.context.object
+        for file in self.files:
+            filepath = os.path.join(self.directory, file.name)
+            print("Info: importing "+filepath)
+            if filepath.endswith(".fbx"):
+                bpy.ops.import_scene.fbx(filepath=filepath, use_anim=True)
+
+                if hasattr(bpy.context.object.animation_data, "action"):
+                    bpy.ops.object.select_all(action='DESELECT')
+                    bpy.context.object.select_set(True)
+                    bpy.context.object.animation_data.action.use_fake_user = False
+                    bpy.context.scene.mix_source_armature = bpy.context.object
+                    context.view_layer.objects.active = mixamoTarget
+                    bpy.ops.mr.import_anim_to_rig()
+                    bpy.ops.object.select_all(action='DESELECT')
+                    mixamoTarget.animation_data.action.name = file.name.split(".")[0]
+                    mixamoTarget.animation_data.action.use_fake_user = True
+                    bpy.context.scene.mix_source_armature.select_set(True)
+                for child in bpy.context.object.children_recursive:
+                    bpy.data.objects[child.name].select_set(True)
+                bpy.ops.object.delete()
+
+        bpy.ops.outliner.orphans_purge()
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 classes = (
     Btool_compile,
     Btool_rename_data,
     Btool_metarig_to_applied,
     Btool_create_cloth_bones,
+    Btool_import_mixamo_animations,
 )
 
 
