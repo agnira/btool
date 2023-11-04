@@ -220,14 +220,16 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
         subtype='DIR_PATH',
     )
 
-    def execute(self, context):
+    @classmethod
+    def poll(cls, context: context):
+        return context.object and context.object.type in {'ARMATURE'}
+
+    def execute(self, context: context):
         mixamoTarget = bpy.context.object
         for file in self.files:
             filepath = os.path.join(self.directory, file.name)
-            print("Info: importing "+filepath)
             if filepath.endswith(".fbx"):
                 bpy.ops.import_scene.fbx(filepath=filepath, use_anim=True)
-
                 if hasattr(bpy.context.object.animation_data, "action"):
                     bpy.ops.object.select_all(action='DESELECT')
                     bpy.context.object.select_set(True)
@@ -238,9 +240,10 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
                     bpy.ops.object.select_all(action='DESELECT')
                     mixamoTarget.animation_data.action.name = file.name.split(".")[0]
                     mixamoTarget.animation_data.action.use_fake_user = True
-                    bpy.context.scene.mix_source_armature.select_set(True)
+                    context.view_layer.objects.active = bpy.context.scene.mix_source_armature
                 for child in bpy.context.object.children_recursive:
                     bpy.data.objects[child.name].select_set(True)
+                print(context.selected_objects)
                 bpy.ops.object.delete()
 
         bpy.ops.outliner.orphans_purge()
