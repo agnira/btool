@@ -241,6 +241,7 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
                     mixamoTarget.animation_data.action.name = file.name.split(".")[0]
                     mixamoTarget.animation_data.action.use_fake_user = True
                     context.view_layer.objects.active = bpy.context.scene.mix_source_armature
+                    bpy.context.scene.mix_source_armature.select_set(True)
                 for child in bpy.context.object.children_recursive:
                     bpy.data.objects[child.name].select_set(True)
                 print(context.selected_objects)
