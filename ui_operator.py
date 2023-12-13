@@ -1,4 +1,5 @@
-import bpy, os
+import bpy
+import os
 from bpy import types, context, ops
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
@@ -96,8 +97,25 @@ class Btool_rename_data(types.Operator):
 
     def execute(self, context: context):
         o: types.Object
-        for o in context.selectable_objects:
+        for o in context.selected_objects:
             o.data.name = o.name
+            if hasattr(o.active_material, "name"):
+                o.active_material.name = o.name
+        return {'FINISHED'}
+
+
+class Btool_rename_data_with_ucupaint(types.Operator):
+    bl_idname = "btool.rename_data_with_ucupaint"
+    bl_label = "Rename Data w/ ucupaint_node)"
+    bl_description = "Batch rename selected data w/ ucupaint_node (only active) to object name"
+
+    def execute(self, context: context):
+        o: types.Object
+        for o in context.selected_objects:
+            o.data.name = o.name
+            if hasattr(o.active_material, "name"):
+                o.active_material.name = o.name
+            bpy.ops.node.y_rename_ypaint_tree(name=o.name)
         return {'FINISHED'}
 
 
@@ -142,6 +160,7 @@ class Btool_metarig_to_applied(types.Operator):
                 bone.head = applied_armature.edit_bones["DEF-"+bone.name].head
         return {'FINISHED'}
 
+
 class Btool_create_cloth_bones(types.Operator):
     bl_idname = "btool.create_cloth_bones"
     bl_label = "Cloth Bones Form Mesh"
@@ -155,10 +174,10 @@ class Btool_create_cloth_bones(types.Operator):
         if cloth_mesh and cloth_mesh.type != 'MESH':
             self.report({'WARNING'}, "Please select mesh guide.")
             return {"CANCELLED"}
-        
-        
+
         points = []
-        marked_edges = [edge for edge in cloth_mesh.data.edges if edge.use_edge_sharp]
+        marked_edges = [
+            edge for edge in cloth_mesh.data.edges if edge.use_edge_sharp]
         for edge in marked_edges:
             vertex_1 = cloth_mesh.data.vertices[edge.vertices[0]].co
             vertex_2 = cloth_mesh.data.vertices[edge.vertices[1]].co
@@ -166,7 +185,8 @@ class Btool_create_cloth_bones(types.Operator):
                 points.append(vertex_1)
             if vertex_2 not in points:
                 points.append(vertex_2)
-        ops.object.armature_add(enter_editmode=True, align='WORLD', location=(0, 0, 0))
+        ops.object.armature_add(enter_editmode=True,
+                                align='WORLD', location=(0, 0, 0))
         armature = context.object
 
         ops.armature.select_all(action='DESELECT')
@@ -199,7 +219,7 @@ class Btool_create_cloth_bones(types.Operator):
                     bone.select = True
                     for parent in bone.parent_recursive:
                         parent.select = True
-        
+
         ops.armature.switch_direction()
 
         ops.object.mode_set(mode='OBJECT')
@@ -207,7 +227,8 @@ class Btool_create_cloth_bones(types.Operator):
         armature.select_set(True)
         context.view_layer.objects.active = armature
         return {'FINISHED'}
-    
+
+
 class Btool_import_mixamo_animations(bpy.types.Operator):
     bl_idname = "btool.import_mixamo_animations"
     bl_label = "Import mixamo Animations"
@@ -238,7 +259,8 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
                     context.view_layer.objects.active = mixamoTarget
                     bpy.ops.mr.import_anim_to_rig()
                     bpy.ops.object.select_all(action='DESELECT')
-                    mixamoTarget.animation_data.action.name = file.name.split(".")[0]
+                    mixamoTarget.animation_data.action.name = file.name.split(".")[
+                        0]
                     mixamoTarget.animation_data.action.use_fake_user = True
                     context.view_layer.objects.active = bpy.context.scene.mix_source_armature
                     bpy.context.scene.mix_source_armature.select_set(True)
@@ -254,12 +276,43 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
+
+class Btool_export(bpy.types.Operator):
+    bl_idname = "btool.export"
+    bl_label = "Export File"
+
+    type: StringProperty(name="type", default="fbx")
+
+    def execute(self, context: context):
+        if (self.type == "fbx"):
+            dir = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
+            filename = bpy.path.basename(
+                bpy.data.filepath).split('.')[0]+".fbx"
+            try:
+                os.mkdir(dir)
+            except OSError as error:
+                print("fbx folder exist, skipped")
+
+            bpy.ops.export_scene.fbx(
+                filepath=os.path.join(dir, filename),
+                check_existing=False,
+                use_selection=True,
+                use_triangles=True,
+                bake_anim_use_all_actions=False,
+                path_mode='COPY',
+                use_armature_deform_only=True
+            )
+        return {'FINISHED'}
+
+
 classes = (
     Btool_compile,
     Btool_rename_data,
+    Btool_rename_data_with_ucupaint,
     Btool_metarig_to_applied,
     Btool_create_cloth_bones,
     Btool_import_mixamo_animations,
+    Btool_export,
 )
 
 
