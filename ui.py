@@ -56,7 +56,11 @@ class UI_PT_BTExportMenu(types.Menu):
     def draw(self, context: context):
         layout = self.layout
         fbx_op = layout.operator("btool.export", text="fbx")
-        fbx_op["mode"]="fbx"
+        fbx_op["type"]="fbx"
+        fbx_op_2 = layout.operator("btool.export", text="fbx combine")
+        fbx_op_2["type"]="fbx_2"
+        gltf_op = layout.operator("btool.export", text="gltf")
+        gltf_op["type"]="gltf"
 
 def main_menu(layout: UILayout):
     # layout.operator("btool.compile", text="Compile")
