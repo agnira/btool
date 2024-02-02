@@ -68,6 +68,8 @@ def main_menu(layout: UILayout):
     # layout.operator("btool.compile", text="Compile")
     layout.menu(UI_PT_BTExportMenu.bl_idname, text="export")
     layout.menu(UI_PT_BTRenameDataMenu.bl_idname, text="Rename Data")
+    layout.separator()
+    layout.operator("btool.render_preview")
     layout.operator("btool.metarig_to_applied",
                     text="Metarig To Applyed Rig")
     layout.operator("btool.create_cloth_bones",
