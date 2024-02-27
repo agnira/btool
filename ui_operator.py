@@ -8,6 +8,78 @@ from bpy.props import *
 from bpy.props import CollectionProperty, StringProperty
 
 
+gltf_options = dict(
+            check_existing=False,
+            use_selection=True,
+            export_format="GLB",
+            export_image_format='AUTO',
+            export_image_add_webp=False,
+            export_image_webp_fallback=False,
+            export_texture_dir="",
+            export_jpeg_quality=75,
+            export_image_quality=75,
+            export_keep_originals=False,
+            export_texcoords=True,
+            export_normals=True,
+            export_draco_mesh_compression_enable=False,
+            export_draco_mesh_compression_level=6,
+            export_draco_position_quantization=14,
+            export_draco_normal_quantization=10,
+            export_draco_texcoord_quantization=12,
+            export_draco_color_quantization=10,
+            export_draco_generic_quantization=12,
+            export_tangents=False,
+            export_materials='EXPORT',
+            export_colors=False,
+            export_attributes=False,
+            use_mesh_edges=False,
+            use_mesh_vertices=False,
+            export_cameras=False,
+            use_visible=False,
+            use_renderable=False,
+            use_active_collection_with_nested=False,
+            use_active_collection=False,
+            use_active_scene=False,
+            export_extras=False,
+            export_yup=True,
+            export_apply=False,
+            export_animations=True,
+            export_frame_range=False,
+            export_frame_step=1,
+            export_force_sampling=True,
+            export_animation_mode='NLA_TRACKS',
+            export_nla_strips_merged_animation_name="Animation",
+            export_def_bones=True,
+            export_hierarchy_flatten_bones=True,
+            export_optimize_animation_size=True,
+            export_optimize_animation_keep_anim_armature=True,
+            export_optimize_animation_keep_anim_object=False,
+            export_negative_frame='SLIDE',
+            export_anim_slide_to_zero=False,
+            export_bake_animation=False,
+            export_anim_single_armature=True,
+            export_reset_pose_bones=True,
+            export_current_frame=False,
+            export_rest_position_armature=True,
+            export_anim_scene_split_object=True,
+            export_skins=True,
+            export_influence_nb=4,
+            export_all_influences=False,
+            export_morph=True,
+            export_morph_normal=True,
+            export_morph_tangent=False,
+            export_morph_animation=True,
+            export_morph_reset_sk_data=True,
+            export_lights=False,
+            export_try_sparse_sk=True,
+            export_try_omit_sparse_sk=False,
+            export_gpu_instances=False,
+            export_nla_strips=True,
+            export_original_specular=False,
+            will_save_settings=False,
+            export_copyright="",
+        )
+
 def unselect_object():
     # D = bpy.data
     # for o in D.objects:
@@ -282,77 +354,7 @@ class Btool_export(bpy.types.Operator):
     type: StringProperty(name="type", default="fbx")
 
     def execute(self, context: context):
-        gltf_options = dict(
-            check_existing=True,
-            use_selection=True,
-            export_format="GLB",
-            export_image_format='AUTO',
-            export_image_add_webp=False,
-            export_image_webp_fallback=False,
-            export_texture_dir="",
-            export_jpeg_quality=90,
-            export_image_quality=90,
-            export_keep_originals=False,
-            export_texcoords=True,
-            export_normals=True,
-            export_draco_mesh_compression_enable=False,
-            export_draco_mesh_compression_level=6,
-            export_draco_position_quantization=14,
-            export_draco_normal_quantization=10,
-            export_draco_texcoord_quantization=12,
-            export_draco_color_quantization=10,
-            export_draco_generic_quantization=12,
-            export_tangents=False,
-            export_materials='EXPORT',
-            export_colors=False,
-            export_attributes=False,
-            use_mesh_edges=False,
-            use_mesh_vertices=False,
-            export_cameras=False,
-            use_visible=False,
-            use_renderable=False,
-            use_active_collection_with_nested=False,
-            use_active_collection=False,
-            use_active_scene=False,
-            export_extras=False,
-            export_yup=True,
-            export_apply=False,
-            export_animations=True,
-            export_frame_range=False,
-            export_frame_step=1,
-            export_force_sampling=True,
-            export_animation_mode='NLA_TRACKS',
-            export_nla_strips_merged_animation_name="Animation",
-            export_def_bones=False,
-            export_hierarchy_flatten_bones=True,
-            export_optimize_animation_size=True,
-            export_optimize_animation_keep_anim_armature=True,
-            export_optimize_animation_keep_anim_object=False,
-            export_negative_frame='SLIDE',
-            export_anim_slide_to_zero=False,
-            export_bake_animation=False,
-            export_anim_single_armature=True,
-            export_reset_pose_bones=True,
-            export_current_frame=False,
-            export_rest_position_armature=True,
-            export_anim_scene_split_object=True,
-            export_skins=True,
-            export_influence_nb=4,
-            export_all_influences=False,
-            export_morph=True,
-            export_morph_normal=True,
-            export_morph_tangent=False,
-            export_morph_animation=True,
-            export_morph_reset_sk_data=True,
-            export_lights=False,
-            export_try_sparse_sk=True,
-            export_try_omit_sparse_sk=False,
-            export_gpu_instances=False,
-            export_nla_strips=True,
-            export_original_specular=False,
-            will_save_settings=False,
-            export_copyright=""
-        )
+        scene = context.scene
         if (self.type == "fbx"):
             dir = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
             filename = bpy.path.basename(
@@ -407,6 +409,7 @@ class Btool_export(bpy.types.Operator):
 
             
             gltf_options['filepath'] = os.path.join(directory, filename)
+            gltf_options['export_colors'] = scene.b_e_vcol
             bpy.ops.export_scene.gltf(**gltf_options)
         elif (self.type == "gltf_2"):
             filename = bpy.path.basename(bpy.data.filepath).split('.')[0]
@@ -419,7 +422,7 @@ class Btool_export(bpy.types.Operator):
             except OSError as error:
                 print("gltf folder exist, skipped")
             gltf_options['filepath'] = directory
-            gltf_options['export_colors'] = True
+            gltf_options['export_colors'] = scene.b_e_vcol
             bpy.ops.export_scene.gltf(**gltf_options)
             
         return {'FINISHED'}

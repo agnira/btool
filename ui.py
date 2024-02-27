@@ -16,9 +16,18 @@ class BanaspateamPanel:
 class UI_PT_BT(types.Panel, BanaspateamPanel):
     bl_label = "BNSPT"
 
-    def draw(self, context: context):
-        main_menu(self.layout)
+    def draw(self, c: context):
+        layout = self.layout
+        main_menu(layout)
 
+class UI_PT_OPT(types.Panel, BanaspateamPanel):
+    bl_label = "Options"
+    bl_parent_id = "UI_PT_BT"
+
+    def draw(self, c: context):
+        scene = c.scene
+        layout = self.layout
+        layout.prop(data=scene, property='b_e_vcol', text="export use vcol")
 
 class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
@@ -29,13 +38,14 @@ class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
         layout.operator("btool.import_mixamo_animations")
 
 # menu
-
 class UI_PT_BTMenu(types.Menu):
     bl_label = "BNSPT Menu"
     bl_idname = "BT_MT_menu"
 
-    def draw(self, context: context):
-        main_menu(self.layout)
+    def draw(self, c: context):
+        layout = self.layout
+        main_menu(layout)
+
 
 
 class UI_PT_BTRenameDataMenu(types.Menu):
@@ -83,7 +93,8 @@ classes = (
     UI_PT_MIXAMO,
     UI_PT_BTMenu,
     UI_PT_BTRenameDataMenu,
-    UI_PT_BTExportMenu
+    UI_PT_BTExportMenu,
+    UI_PT_OPT,
 )
 
 bt_keymaps = []
@@ -92,6 +103,8 @@ bt_keymaps = []
 def register():
     for c in classes:
         register_class(c)
+
+    bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
 
     key_config: KeyConfig = bpy.context.window_manager.keyconfigs.addon
 
