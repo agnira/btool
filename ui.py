@@ -28,6 +28,7 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
         scene = c.scene
         layout = self.layout
         layout.prop(data=scene, property='b_e_vcol', text="export use vcol")
+        layout.prop(data=scene, property='b_e_flatten_h', text="export flatten hierarchy")
 
 class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
@@ -86,6 +87,7 @@ def main_menu(layout: UILayout):
                     text="Cloth Bones Form Mesh")
     layout.separator()
     layout.operator("btool.import_mixamo_animations")
+    layout.operator("btool.set_rigify_type")
 
 
 classes = (
@@ -99,12 +101,12 @@ classes = (
 
 bt_keymaps = []
 
-
 def register():
     for c in classes:
         register_class(c)
 
     bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
+    bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
 
     key_config: KeyConfig = bpy.context.window_manager.keyconfigs.addon
 

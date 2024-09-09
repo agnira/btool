@@ -42,7 +42,7 @@ gltf_options = dict(
             use_active_scene=False,
             export_extras=False,
             export_yup=True,
-            export_apply=False,
+            export_apply=True,
             export_animations=True,
             export_frame_range=False,
             export_frame_step=1,
@@ -56,7 +56,7 @@ gltf_options = dict(
             export_optimize_animation_keep_anim_object=False,
             export_negative_frame='SLIDE',
             export_anim_slide_to_zero=False,
-            export_bake_animation=False,
+            export_bake_animation=True,
             export_anim_single_armature=True,
             export_reset_pose_bones=True,
             export_current_frame=False,
@@ -98,11 +98,11 @@ class Btool_compile(types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
-    def draw(self, ctx: context):
+    def draw(self, ctx: types.Context):
         self.layout.prop(self, "remove_vertex_group",
                          text="Remove Vertex Group")
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         D = bpy.data
         found: Collection = None
         for c in context.scene.collection.children_recursive:
@@ -167,7 +167,7 @@ class Btool_rename_data(types.Operator):
     bl_label = "Rename Data (Batch)"
     bl_description = "Batch rename selected data to object name"
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         o: types.Object
         for o in context.selected_objects:
             o.data.name = o.name
@@ -179,7 +179,7 @@ class Btool_rename_data_with_ucupaint(types.Operator):
     bl_label = "Rename Data w/ ucupaint_node)"
     bl_description = "Batch rename selected data w/ ucupaint_node (only active) to object name"
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         o: types.Object
         for o in context.selected_objects:
             o.data.name = o.name
@@ -198,7 +198,7 @@ class Btool_metarig_to_applied(types.Operator):
         name="Metarig", description="Select metarig target")
 
     @classmethod
-    def poll(cls, context: context):
+    def poll(cls, context: types.Context):
         return context.object and context.object.type in {'ARMATURE'}
 
     def invoke(self, context, event):
@@ -207,10 +207,10 @@ class Btool_metarig_to_applied(types.Operator):
             return {'CANCELLED'}
         return context.window_manager.invoke_props_dialog(self)
 
-    def draw(self, context: context):
+    def draw(self, context: types.Context):
         self.layout.prop_search(self, 'metarig_object', bpy.data, "armatures")
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         ops.object.mode_set(mode="OBJECT")
         unselect_object()
         metarig = context.scene.objects[self.metarig_object]
@@ -236,7 +236,7 @@ class Btool_create_cloth_bones(types.Operator):
     bl_label = "Cloth Bones Form Mesh"
     bl_description = "mark seam for bones line, mark sharp for the root mark"
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         cloth_mesh = context.object
         if not cloth_mesh:
             self.report({'WARNING'}, "Please select mesh guide.")
@@ -312,10 +312,10 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
     )
 
     @classmethod
-    def poll(cls, context: context):
+    def poll(cls, context: types.Context):
         return context.object and context.object.type in {'ARMATURE'}
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         mixamoTarget = bpy.context.object
         for file in self.files:
             filepath = os.path.join(self.directory, file.name)
@@ -329,8 +329,7 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
                     context.view_layer.objects.active = mixamoTarget
                     bpy.ops.mr.import_anim_to_rig()
                     bpy.ops.object.select_all(action='DESELECT')
-                    mixamoTarget.animation_data.action.name = file.name.split(".")[
-                        0]
+                    mixamoTarget.animation_data.action.name = file.name.split(".")[0]
                     mixamoTarget.animation_data.action.use_fake_user = True
                     context.view_layer.objects.active = bpy.context.scene.mix_source_armature
                     bpy.context.scene.mix_source_armature.select_set(True)
@@ -353,12 +352,16 @@ class Btool_export(bpy.types.Operator):
 
     type: StringProperty(name="type", default="fbx")
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         scene = context.scene
         if (self.type == "fbx"):
-            dir = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
-            filename = bpy.path.basename(
-                bpy.data.filepath).split('.')[0]+".fbx"
+            dir_fbx = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
+            try:
+                os.mkdir(dir_fbx)
+            except OSError as error:
+                print("fbx folder exist, skipped")
+            dir = os.path.join(dir_fbx, context.active_object.users_collection[0].name)
+            filename = context.active_object.users_collection[0].name+".fbx"
             try:
                 os.mkdir(dir)
             except OSError as error:
@@ -369,6 +372,7 @@ class Btool_export(bpy.types.Operator):
                 check_existing=False,
                 use_selection=True,
                 use_triangles=True,
+                embed_textures=False,
                 bake_anim=True,
                 bake_anim_use_all_bones=True,
                 bake_anim_use_nla_strips=True,
@@ -410,6 +414,7 @@ class Btool_export(bpy.types.Operator):
             
             gltf_options['filepath'] = os.path.join(directory, filename)
             gltf_options['export_colors'] = scene.b_e_vcol
+            gltf_options['export_hierarchy_flatten_bones'] = scene.b_e_flatten_h
             bpy.ops.export_scene.gltf(**gltf_options)
         elif (self.type == "gltf_2"):
             filename = bpy.path.basename(bpy.data.filepath).split('.')[0]
@@ -431,7 +436,7 @@ class Btool_render_preview(bpy.types.Operator):
     bl_idname = "btool.render_preview"
     bl_label = "Render preview"
 
-    def execute(self, context: context):
+    def execute(self, context: types.Context):
         selected_objects = context.selected_objects
         objects = bpy.data.objects
         hidden = []
@@ -463,6 +468,23 @@ class Btool_render_preview(bpy.types.Operator):
             
             hidden = []
         return {'FINISHED'}
+    
+class Btool_set_rigify_type(types.Operator):
+    bl_idname = "btool.set_rigify_type"
+    bl_label = "Set Rigify Bones Type"
+
+    @classmethod
+    def poll(cls, context: types.Context):
+        return context.object and context.object.type in {'ARMATURE'}
+
+    def execute(self, context: types.Context):
+        pose_bones = context.selected_pose_bones
+
+        for bone in pose_bones:
+            bone.rigify_type = 'basic.super_copy'
+            bone.rigify_parameters.super_copy_widget_type = 'bone'
+        
+        return {'FINISHED'}
 
 classes = (
     Btool_compile,
@@ -473,6 +495,7 @@ classes = (
     Btool_import_mixamo_animations,
     Btool_export,
     Btool_render_preview,
+    Btool_set_rigify_type,
 )
 
 
