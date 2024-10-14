@@ -30,7 +30,7 @@ gltf_options = dict(
             export_draco_generic_quantization=12,
             export_tangents=False,
             export_materials='EXPORT',
-            export_colors=False,
+            # export_colors=False,
             export_attributes=False,
             use_mesh_edges=False,
             use_mesh_vertices=False,
@@ -413,7 +413,7 @@ class Btool_export(bpy.types.Operator):
 
             
             gltf_options['filepath'] = os.path.join(directory, filename)
-            gltf_options['export_colors'] = scene.b_e_vcol
+            # gltf_options['export_colors'] = scene.b_e_vcol
             gltf_options['export_hierarchy_flatten_bones'] = scene.b_e_flatten_h
             bpy.ops.export_scene.gltf(**gltf_options)
         elif (self.type == "gltf_2"):
@@ -427,7 +427,7 @@ class Btool_export(bpy.types.Operator):
             except OSError as error:
                 print("gltf folder exist, skipped")
             gltf_options['filepath'] = directory
-            gltf_options['export_colors'] = scene.b_e_vcol
+            # gltf_options['export_colors'] = scene.b_e_vcol
             bpy.ops.export_scene.gltf(**gltf_options)
             
         return {'FINISHED'}
@@ -475,7 +475,7 @@ class Btool_set_rigify_type(types.Operator):
 
     @classmethod
     def poll(cls, context: types.Context):
-        return context.object and context.object.type in {'ARMATURE'}
+        return context.object and context.object.type in {'ARMATURE'} and context.object.mode == "POSE"
 
     def execute(self, context: types.Context):
         pose_bones = context.selected_pose_bones
