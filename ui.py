@@ -27,6 +27,7 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
     def draw(self, c: context):
         scene = c.scene
         layout = self.layout
+        layout.prop(data=scene, property='b_e_export_path', text="export path") 
         layout.prop(data=scene, property='b_e_vcol', text="export use vcol")
         layout.prop(data=scene, property='b_e_flatten_h', text="export flatten hierarchy")
 
@@ -85,6 +86,7 @@ def main_menu(layout: UILayout):
                     text="Metarig To Applyed Rig")
     layout.operator("btool.create_cloth_bones",
                     text="Cloth Bones Form Mesh")
+    layout.operator("btool.reparent_separated_bone_rigify")
     layout.separator()
     layout.operator("btool.import_mixamo_animations")
     layout.operator("btool.set_rigify_type")
@@ -105,6 +107,7 @@ def register():
     for c in classes:
         register_class(c)
 
+    bpy.types.Scene.b_e_export_path = bpy.props.StringProperty("b_e_export_path")
     bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
     bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
 
@@ -121,7 +124,7 @@ def register():
 def unregister():
     for c in classes:
         unregister_class(c)
-
+    
     for km, keymap_item in bt_keymaps:
         km.keymap_items.remove(keymap_item)
     bt_keymaps.clear()

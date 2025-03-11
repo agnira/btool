@@ -30,6 +30,9 @@ gltf_options = dict(
             export_draco_generic_quantization=12,
             export_tangents=False,
             export_materials='EXPORT',
+            export_vertex_color='MATERIAL',
+            export_active_vertex_color_when_no_material=True,
+            export_all_vertex_colors=False,
             # export_colors=False,
             export_attributes=False,
             use_mesh_edges=False,
@@ -79,6 +82,19 @@ gltf_options = dict(
             will_save_settings=False,
             export_copyright="",
         )
+
+fbx_options = dict(
+                check_existing=False,
+                use_selection=True,
+                use_triangles=True,
+                embed_textures=False,
+                bake_anim=True,
+                bake_anim_use_all_bones=True,
+                bake_anim_use_nla_strips=True,
+                bake_anim_use_all_actions=False,
+                path_mode='COPY',
+                use_armature_deform_only=True
+            )
 
 def unselect_object():
     # D = bpy.data
@@ -185,7 +201,7 @@ class Btool_rename_data_with_ucupaint(types.Operator):
             o.data.name = o.name
             if hasattr(o.active_material, "name"):
                 o.active_material.name = o.name
-            bpy.ops.node.y_rename_ypaint_tree(name=o.name)
+            bpy.ops.wm.y_rename_ypaint_tree(name=o.name)
         return {'FINISHED'}
 
 
@@ -367,19 +383,8 @@ class Btool_export(bpy.types.Operator):
             except OSError as error:
                 print("fbx folder exist, skipped")
 
-            bpy.ops.export_scene.fbx(
-                filepath=os.path.join(dir, filename),
-                check_existing=False,
-                use_selection=True,
-                use_triangles=True,
-                embed_textures=False,
-                bake_anim=True,
-                bake_anim_use_all_bones=True,
-                bake_anim_use_nla_strips=True,
-                bake_anim_use_all_actions=False,
-                path_mode='COPY',
-                use_armature_deform_only=True
-            )
+            fbx_options["filepath"] = os.path.join(dir, filename)
+            bpy.ops.export_scene.fbx(**fbx_options)
         elif (self.type == "fbx_2"):
             dir = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
             filename = bpy.path.basename(
@@ -403,6 +408,8 @@ class Btool_export(bpy.types.Operator):
             )
         elif (self.type == "gltf"):
             directory = os.path.join(os.path.dirname(bpy.data.filepath), "gltf")
+            if scene.b_e_export_path != '':
+                directory = scene.b_e_export_path
             # filename = bpy.path.basename(
             # bpy.data.filepath).split('.')[0]+".gltf"
             filename = context.active_object.users_collection[0].name
@@ -486,6 +493,50 @@ class Btool_set_rigify_type(types.Operator):
         
         return {'FINISHED'}
 
+class Btool_reparent_separated_bone_rigify(types.Operator):
+    bl_idname = "btool.reparent_separated_bone_rigify"
+    bl_label = "Reparent Separated Bone(rigify)"
+
+    @classmethod
+    def poll(cls, context: types.Context):
+        return context.object and context.object.type in {'ARMATURE'}
+        
+    def execute(self, context: types.Context):
+        mode = context.object.mode
+        if (context.active_object.type == "ARMATURE"):
+            bpy.ops.object.mode_set(mode="EDIT")
+            rig = bpy.data.armatures[context.active_object.name]
+            edit_bones = rig.edit_bones
+            pose_bones = context.active_object.pose.bones
+            bones = []
+            print(0, edit_bones)
+            for edit_bone in edit_bones:
+                bones.append(edit_bone.name)
+                if "ORG" in edit_bone.name and edit_bone.use_connect == False:
+                    if not "tweak" in edit_bone.parent.name:
+                        def_name = edit_bone.name.replace("ORG", "DEF")
+                        def_parent = edit_bone.parent.name.replace("ORG", "DEF")
+                        if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
+                            edit_bones[def_name].parent = edit_bones[def_parent]
+
+            bpy.ops.object.mode_set(mode="POSE")
+            for pose_bone in pose_bones:
+                bpy.ops.object.mode_set(mode="EDIT")
+                if "ORG" in pose_bone.name:
+                    def_name = pose_bone.name.replace("ORG", "DEF")
+                    def_parent = pose_bone.parent.name.replace("ORG", "DEF")
+                    if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
+                        if not pose_bones[def_name].constraints.get("Copy Transforms"):
+                            ct = pose_bones[def_name].constraints.new("COPY_TRANSFORMS")
+                            ct.target = context.active_object
+                            ct.subtarget = def_name.replace("DEF", "ORG")
+                            ct.target_space = "WORLD"
+                            ct.owner_space = "WORLD"
+
+            bpy.ops.object.mode_set(mode=mode)
+            return {'FINISHED'}
+
+
 classes = (
     Btool_compile,
     Btool_rename_data,
@@ -496,6 +547,7 @@ classes = (
     Btool_export,
     Btool_render_preview,
     Btool_set_rigify_type,
+    Btool_reparent_separated_bone_rigify,
 )
 
 
