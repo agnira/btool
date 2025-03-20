@@ -397,10 +397,23 @@ class Btool_export(bpy.types.Operator):
                 material: types.Material = bpy.data.materials[matname]
                 for node in material.node_tree.nodes:
                     if node.type == 'TEX_IMAGE':
-                        node.image.unpack()
+                        try:
+                            node.image.unpack()
+                        except:
+                            pass
 
             fbx_options["filepath"] = os.path.join(dir, filename)
             bpy.ops.export_scene.fbx(**fbx_options)
+
+            for matname in materials:
+                material: types.Material = bpy.data.materials[matname]
+                for node in material.node_tree.nodes:
+                    if node.type == 'TEX_IMAGE':
+                        try:
+                            node.image.pack()
+                        except:
+                            pass
+            
         elif (self.type == "fbx_2"):
             dir = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
             filename = bpy.path.basename(
