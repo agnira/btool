@@ -383,6 +383,22 @@ class Btool_export(bpy.types.Operator):
             except OSError as error:
                 print("fbx folder exist, skipped")
 
+            obj = context.selected_objects
+            materials: [str] = []
+            for o in obj:
+                for mat in o.material_slots: 
+                    try:
+                        materials.remove(mat.name)
+                    except:
+                        pass
+                    materials.append(mat.name)
+            
+            for matname in materials:
+                material: types.Material = bpy.data.materials[matname]
+                for node in material.node_tree.nodes:
+                    if node.type == 'TEX_IMAGE':
+                        node.image.unpack()
+
             fbx_options["filepath"] = os.path.join(dir, filename)
             bpy.ops.export_scene.fbx(**fbx_options)
         elif (self.type == "fbx_2"):
