@@ -93,7 +93,8 @@ fbx_options = dict(
                 bake_anim_use_nla_strips=True,
                 bake_anim_use_all_actions=False,
                 path_mode='COPY',
-                use_armature_deform_only=True
+                use_armature_deform_only=True,
+                add_leaf_bones=False,
             )
 
 def unselect_object():
@@ -101,6 +102,38 @@ def unselect_object():
     # for o in D.objects:
     #     o.select_set(False)
     ops.object.select_all(action='DESELECT')
+
+def reparent_rigify_bone():
+    mode = context.object.mode
+    if (context.active_object.type == 'ARMATURE'):
+        bpy.ops.object.mode_set(mode="EDIT")
+        rig = bpy.data.armatures[context.active_object.data.name]
+        edit_bones = rig.edit_bones
+        pose_bones = context.active_object.pose.bones
+        bones = []
+        print(0, edit_bones)
+        for edit_bone in edit_bones:
+            bones.append(edit_bone.name)
+            if "ORG" in edit_bone.name and edit_bone.use_connect == False:
+                if not "tweak" in edit_bone.parent.name:
+                    def_name = edit_bone.name.replace("ORG", "DEF")
+                    def_parent = edit_bone.parent.name.replace("ORG", "DEF")
+                    if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
+                        edit_bones[def_name].parent = edit_bones[def_parent]
+        bpy.ops.object.mode_set(mode="POSE")
+        for pose_bone in pose_bones:
+            bpy.ops.object.mode_set(mode="EDIT")
+            if "ORG" in pose_bone.name:
+                def_name = pose_bone.name.replace("ORG", "DEF")
+                def_parent = pose_bone.parent.name.replace("ORG", "DEF")
+                if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
+                    if not pose_bones[def_name].constraints.get("Copy Transforms"):
+                        ct = pose_bones[def_name].constraints.new("COPY_TRANSFORMS")
+                        ct.target = context.active_object
+                        ct.subtarget = def_name.replace("DEF", "ORG")
+                        ct.target_space = "WORLD"
+                        ct.owner_space = "WORLD"
+        bpy.ops.object.mode_set(mode=mode)
 
 
 class Btool_compile(types.Operator):
@@ -370,6 +403,49 @@ class Btool_export(bpy.types.Operator):
 
     def execute(self, context: types.Context):
         scene = context.scene
+        objects = context.selected_objects
+        material_names: [str] = []
+        armatures = []
+        for o in objects:
+            if o.type == 'ARMATURE':
+                armatures.append(o)
+            for mat in o.material_slots: 
+                try:
+                    material_names.remove(mat.name)
+                except:
+                    pass
+                material_names.append(mat.name)
+        
+        emissionMaterials = {}
+
+        for matname in material_names:
+            outputnodename = ""
+            material: types.Material = bpy.data.materials[matname]
+            node_tree = material.node_tree
+            nodes = node_tree.nodes
+            for node in nodes:
+                if node.type == 'OUTPUT_MATERIAL' and node.is_active_output == True:
+                    outputnodename = node.name
+
+            outputnode = nodes[outputnodename]
+            fromnode: types.Node = outputnode.inputs['Surface'].links[0].from_node
+            if fromnode.type == 'EMISSION':
+                node_tree = node_tree
+                nodeprincipled = nodes.new('ShaderNodeBsdfPrincipled')
+                nodeprincipled.location = fromnode.location
+
+                colorsource = fromnode.inputs['Color'].links[0].from_socket
+                node_tree.links.new(nodeprincipled.inputs['Base Color'], colorsource)
+                
+                node_tree.links.new(outputnode.inputs['Surface'], nodeprincipled.outputs['BSDF'])
+                emissionMaterials[matname] = [outputnodename, fromnode.name, nodeprincipled.name]
+
+        activeobject = context.active_object
+        for armature in armatures:
+            context.view_layer.objects.active = armature
+            reparent_rigify_bone()        
+        context.view_layer.objects.active = activeobject
+
         if (self.type == "fbx"):
             dir_fbx = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
             try:
@@ -383,17 +459,8 @@ class Btool_export(bpy.types.Operator):
             except OSError as error:
                 print("fbx folder exist, skipped")
 
-            obj = context.selected_objects
-            materials: [str] = []
-            for o in obj:
-                for mat in o.material_slots: 
-                    try:
-                        materials.remove(mat.name)
-                    except:
-                        pass
-                    materials.append(mat.name)
             
-            for matname in materials:
+            for matname in material_names:
                 material: types.Material = bpy.data.materials[matname]
                 for node in material.node_tree.nodes:
                     if node.type == 'TEX_IMAGE':
@@ -405,7 +472,7 @@ class Btool_export(bpy.types.Operator):
             fbx_options["filepath"] = os.path.join(dir, filename)
             bpy.ops.export_scene.fbx(**fbx_options)
 
-            for matname in materials:
+            for matname in material_names:
                 material: types.Material = bpy.data.materials[matname]
                 for node in material.node_tree.nodes:
                     if node.type == 'TEX_IMAGE':
@@ -465,7 +532,19 @@ class Btool_export(bpy.types.Operator):
             gltf_options['filepath'] = directory
             # gltf_options['export_colors'] = scene.b_e_vcol
             bpy.ops.export_scene.gltf(**gltf_options)
+        
+        # restore node
+        for key in emissionMaterials.keys():
+            materials = bpy.data.materials
+            node_tree: types.NodeTree = materials[key].node_tree
+            nodes = node_tree.nodes
+            outputnode: types.Node = nodes[emissionMaterials[key][0]]
+            emissionnode: types.Node = nodes[emissionMaterials[key][1]]
+            principlednode: types.Node = nodes[emissionMaterials[key][2]]
             
+            node_tree.links.new(outputnode.inputs['Surface'], emissionnode.outputs['Emission'])
+            nodes.remove(principlednode)
+
         return {'FINISHED'}
 
 class Btool_render_preview(bpy.types.Operator):
@@ -531,39 +610,8 @@ class Btool_reparent_separated_bone_rigify(types.Operator):
         return context.object and context.object.type in {'ARMATURE'}
         
     def execute(self, context: types.Context):
-        mode = context.object.mode
-        if (context.active_object.type == "ARMATURE"):
-            bpy.ops.object.mode_set(mode="EDIT")
-            rig = bpy.data.armatures[context.active_object.name]
-            edit_bones = rig.edit_bones
-            pose_bones = context.active_object.pose.bones
-            bones = []
-            print(0, edit_bones)
-            for edit_bone in edit_bones:
-                bones.append(edit_bone.name)
-                if "ORG" in edit_bone.name and edit_bone.use_connect == False:
-                    if not "tweak" in edit_bone.parent.name:
-                        def_name = edit_bone.name.replace("ORG", "DEF")
-                        def_parent = edit_bone.parent.name.replace("ORG", "DEF")
-                        if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
-                            edit_bones[def_name].parent = edit_bones[def_parent]
-
-            bpy.ops.object.mode_set(mode="POSE")
-            for pose_bone in pose_bones:
-                bpy.ops.object.mode_set(mode="EDIT")
-                if "ORG" in pose_bone.name:
-                    def_name = pose_bone.name.replace("ORG", "DEF")
-                    def_parent = pose_bone.parent.name.replace("ORG", "DEF")
-                    if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
-                        if not pose_bones[def_name].constraints.get("Copy Transforms"):
-                            ct = pose_bones[def_name].constraints.new("COPY_TRANSFORMS")
-                            ct.target = context.active_object
-                            ct.subtarget = def_name.replace("DEF", "ORG")
-                            ct.target_space = "WORLD"
-                            ct.owner_space = "WORLD"
-
-            bpy.ops.object.mode_set(mode=mode)
-            return {'FINISHED'}
+        reparent_rigify_bone()
+        return {'FINISHED'}
 
 
 classes = (
