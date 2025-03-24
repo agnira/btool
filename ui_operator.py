@@ -103,7 +103,7 @@ def unselect_object():
     #     o.select_set(False)
     ops.object.select_all(action='DESELECT')
 
-def reparent_rigify_bone():
+def reparent_rigify_bone(context: types.Context):
     mode = context.object.mode
     if (context.active_object.type == 'ARMATURE'):
         bpy.ops.object.mode_set(mode="EDIT")
@@ -443,7 +443,7 @@ class Btool_export(bpy.types.Operator):
         activeobject = context.active_object
         for armature in armatures:
             context.view_layer.objects.active = armature
-            reparent_rigify_bone()        
+            reparent_rigify_bone(context)        
         context.view_layer.objects.active = activeobject
 
         if (self.type == "fbx"):
@@ -610,7 +610,7 @@ class Btool_reparent_separated_bone_rigify(types.Operator):
         return context.object and context.object.type in {'ARMATURE'}
         
     def execute(self, context: types.Context):
-        reparent_rigify_bone()
+        reparent_rigify_bone(context)
         return {'FINISHED'}
 
 
