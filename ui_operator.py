@@ -423,9 +423,19 @@ class Btool_export(bpy.types.Operator):
             material: types.Material = bpy.data.materials[matname]
             node_tree = material.node_tree
             nodes = node_tree.nodes
+            unusedoutputs = []
             for node in nodes:
-                if node.type == 'OUTPUT_MATERIAL' and node.is_active_output == True:
-                    outputnodename = node.name
+                if node.type == 'OUTPUT_MATERIAL':
+                    if node.is_active_output == True:
+                        outputnodename = node.name
+                    else:
+                        unusedoutputs.append(node.name)
+
+            for unusedoutput in unusedoutputs:
+                try:
+                    nodes.remove(nodes[unusedoutput])
+                except:
+                    pass
 
             outputnode = nodes[outputnodename]
             fromnode: types.Node = outputnode.inputs['Surface'].links[0].from_node
