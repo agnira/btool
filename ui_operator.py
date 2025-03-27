@@ -7,6 +7,27 @@ from bpy.props import *
 
 from bpy.props import CollectionProperty, StringProperty
 
+skipedreparentbone = [
+    "ORG-spine.003",
+    "ORG-pelvis.L",
+    "ORG-pelvis.R",
+    "ORG-thigh.L",
+    "ORG-toe.L",
+    "ORG-thigh.R",
+    "ORG-toe.R",
+    "ORG-spine.009",
+    "ORG-hair",
+    "ORG-ear.L",
+    "ORG-eye.L",
+    "ORG-ear.R",
+    "ORG-eye.R",
+    "ORG-shoulder.L",
+    "ORG-front_thigh.L",
+    "ORG-front_toe.L",
+    "ORG-shoulder.R",
+    "ORG-front_thigh.R",
+    "ORG-front_toe.R",
+]
 
 gltf_options = dict(
             check_existing=False,
@@ -111,28 +132,29 @@ def reparent_rigify_bone(context: types.Context):
         edit_bones = rig.edit_bones
         pose_bones = context.active_object.pose.bones
         bones = []
-        print(0, edit_bones)
         for edit_bone in edit_bones:
             bones.append(edit_bone.name)
             if "ORG" in edit_bone.name and edit_bone.use_connect == False:
                 if not "tweak" in edit_bone.parent.name:
-                    def_name = edit_bone.name.replace("ORG", "DEF")
-                    def_parent = edit_bone.parent.name.replace("ORG", "DEF")
-                    if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
-                        edit_bones[def_name].parent = edit_bones[def_parent]
+                    if not edit_bones.name in skipedreparentbone:
+                        def_name = edit_bone.name.replace("ORG", "DEF")
+                        def_parent = edit_bone.parent.name.replace("ORG", "DEF")
+                        if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
+                            edit_bones[def_name].parent = edit_bones[def_parent]
         bpy.ops.object.mode_set(mode="POSE")
         for pose_bone in pose_bones:
             bpy.ops.object.mode_set(mode="EDIT")
             if "ORG" in pose_bone.name:
-                def_name = pose_bone.name.replace("ORG", "DEF")
-                def_parent = pose_bone.parent.name.replace("ORG", "DEF")
-                if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
-                    if not pose_bones[def_name].constraints.get("Copy Transforms"):
-                        ct = pose_bones[def_name].constraints.new("COPY_TRANSFORMS")
-                        ct.target = context.active_object
-                        ct.subtarget = def_name.replace("DEF", "ORG")
-                        ct.target_space = "WORLD"
-                        ct.owner_space = "WORLD"
+                if not pose_bones.name in skipedreparentbone:
+                    def_name = pose_bone.name.replace("ORG", "DEF")
+                    def_parent = pose_bone.parent.name.replace("ORG", "DEF")
+                    if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
+                        if not pose_bones[def_name].constraints.get("Copy Transforms"):
+                            ct = pose_bones[def_name].constraints.new("COPY_TRANSFORMS")
+                            ct.target = context.active_object
+                            ct.subtarget = def_name.replace("DEF", "ORG")
+                            ct.target_space = "WORLD"
+                            ct.owner_space = "WORLD"
         bpy.ops.object.mode_set(mode=mode)
 
 
