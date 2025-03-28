@@ -136,7 +136,7 @@ def reparent_rigify_bone(context: types.Context):
             bones.append(edit_bone.name)
             if "ORG" in edit_bone.name and edit_bone.use_connect == False:
                 if not "tweak" in edit_bone.parent.name:
-                    if not edit_bones.name in skipedreparentbone:
+                    if not edit_bone.name in skipedreparentbone:
                         def_name = edit_bone.name.replace("ORG", "DEF")
                         def_parent = edit_bone.parent.name.replace("ORG", "DEF")
                         if not edit_bones.get(def_name) == None and not edit_bones.get(def_parent) == None:
@@ -145,7 +145,7 @@ def reparent_rigify_bone(context: types.Context):
         for pose_bone in pose_bones:
             bpy.ops.object.mode_set(mode="EDIT")
             if "ORG" in pose_bone.name:
-                if not pose_bones.name in skipedreparentbone:
+                if not pose_bone.name in skipedreparentbone:
                     def_name = pose_bone.name.replace("ORG", "DEF")
                     def_parent = pose_bone.parent.name.replace("ORG", "DEF")
                     if not pose_bones.get(def_name) == None and not pose_bones.get(def_parent) == None:
