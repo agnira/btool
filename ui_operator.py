@@ -4,6 +4,7 @@ from bpy import types, context, ops
 from bpy.types import Collection
 from bpy.utils import register_class, unregister_class
 from bpy.props import *
+from bpy_extras import anim_utils
 
 from bpy.props import CollectionProperty, StringProperty
 
@@ -125,6 +126,7 @@ def unselect_object():
     ops.object.select_all(action='DESELECT')
 
 def duplicate_bone(context: types.Context):
+    mode = context.object.mode
     objects = context.selected_objects
     game_rig = None
     for obj in objects:
@@ -135,7 +137,6 @@ def duplicate_bone(context: types.Context):
             game_rig.data = obj.data.copy()
     if game_rig != None:
         original_rig = game_rig["original_rig"]
-        mode = context.object.mode
         bpy.ops.object.mode_set(mode="OBJECT")
         context.view_layer.objects.active = game_rig
         bpy.ops.object.mode_set(mode="EDIT")
@@ -148,14 +149,40 @@ def duplicate_bone(context: types.Context):
         bpy.ops.object.mode_set(mode="POSE")
         pose_bones = game_rig.pose.bones
          
+        for bone in pose_bones:
+            for constraint in bone.constraints:
+                bone.constraints.remove(constraint)
+            ct: types.CopyTransformsConstraint = bone.constraints.new("COPY_TRANSFORMS")
+            ct.target = original_rig
+            ct.subtarget = bone.name
+            ct.target_space = 'WORLD'
+            ct.owner_space = 'WORLD'
 
-        for tracks in original_rig.animation_data.nla_tracks:
-            tracks.is_solo = True
-            frame_start = tracks.strips[0].frame_start
-            frame_end = tracks.strips[0].frame_end
+        for track in original_rig.animation_data.nla_tracks:
+            game_rig.animation_data.nla_tracks.remove(game_rig.animation_data.nla_tracks[track.name])
+            track.is_solo = True
+            frame_start = int(track.strips[0].frame_start)
+            frame_end = int(track.strips[0].frame_end)
 
-            bpy.ops.nla.bake(frame_start=frame_start, frame_end=frame_end, bake_types={'OBJECT'}, only_selected=False, visual_keying=True)
-        
+            bake_action = anim_utils.bake_action_objects(
+                object_action_pairs=[[game_rig, None]],
+                frames=[i for i in range(frame_start, frame_end)],
+                bake_options=anim_utils.BakeOptions(
+                    only_selected=False,
+                    do_pose=True,
+                    do_object=False,
+                    do_visual_keying=True,
+                    do_constraint_clear=False,
+                    do_parents_clear=False,
+                    do_clean=False,
+                    do_location=True,
+                    do_rotation=True,
+                    do_scale=True,
+                    do_bbone=True,
+                    do_custom_props=True,
+                ),
+            )            
+
         for bone in pose_bones:
             for constraint in bone.constraints:
                 bone.constraints.remove(constraint)
@@ -166,6 +193,8 @@ def duplicate_bone(context: types.Context):
               modifier.object = game_rig 
         if obj.type == "MESH":
             obj.parent = game_rig
+
+    bpy.ops.object.mode_set(mode = mode)
             
 def reparent_rigify_bone(context: types.Context):
     mode = context.object.mode
