@@ -124,6 +124,49 @@ def unselect_object():
     #     o.select_set(False)
     ops.object.select_all(action='DESELECT')
 
+def duplicate_bone(context: types.Context):
+    objects = context.selected_objects
+    game_rig = None
+    for obj in objects:
+        if obj.type == "ARMATURE":
+            game_rig = obj.copy()
+            obj.users_collection[0].objects.link(game_rig)
+            game_rig['original_rig'] = obj
+            game_rig.data = obj.data.copy()
+    if game_rig != None:
+        original_rig = game_rig["original_rig"]
+        mode = context.object.mode
+        bpy.ops.object.mode_set(mode="OBJECT")
+        context.view_layer.objects.active = game_rig
+        bpy.ops.object.mode_set(mode="EDIT")
+        edit_bones = game_rig.data.edit_bones
+        for bone in edit_bones:
+            if bone.use_deform == False:
+                edit_bones.remove(bone)
+            else:
+                bone.use_connect = False
+        bpy.ops.object.mode_set(mode="POSE")
+        pose_bones = game_rig.pose.bones
+         
+
+        for tracks in original_rig.animation_data.nla_tracks:
+            tracks.is_solo = True
+            frame_start = tracks.strips[0].frame_start
+            frame_end = tracks.strips[0].frame_end
+
+            bpy.ops.nla.bake(frame_start=frame_start, frame_end=frame_end, bake_types={'OBJECT'}, only_selected=False, visual_keying=True)
+        
+        for bone in pose_bones:
+            for constraint in bone.constraints:
+                bone.constraints.remove(constraint)
+        
+    for obj in objects:
+        for modifier in obj.modifiers:
+          if modifier.type == "ARMATURE":
+              modifier.object = game_rig 
+        if obj.type == "MESH":
+            obj.parent = game_rig
+            
 def reparent_rigify_bone(context: types.Context):
     mode = context.object.mode
     if (context.active_object.type == 'ARMATURE'):
@@ -473,10 +516,12 @@ class Btool_export(bpy.types.Operator):
                 emissionMaterials[matname] = [outputnodename, fromnode.name, nodeprincipled.name]
 
         activeobject = context.active_object
-        for armature in armatures:
-            context.view_layer.objects.active = armature
-            reparent_rigify_bone(context)        
+        # for armature in armatures:
+        #     context.view_layer.objects.active = armature
+        #     reparent_rigify_bone(context)        
         context.view_layer.objects.active = activeobject
+
+        duplicate_bone(context)
 
         if (self.type == "fbx"):
             dir_fbx = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
