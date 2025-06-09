@@ -125,7 +125,7 @@ def unselect_object():
     #     o.select_set(False)
     ops.object.select_all(action='DESELECT')
 
-def duplicate_bone(context: types.Context):
+def duplicate_rig(context: types.Context):
     mode = context.object.mode
     objects = context.selected_objects
     game_rig = None
@@ -136,7 +136,7 @@ def duplicate_bone(context: types.Context):
             game_rig['original_rig'] = obj
             game_rig.data = obj.data.copy()
     if game_rig != None:
-        original_rig = game_rig["original_rig"]
+        original_rig: types.Object = game_rig["original_rig"]
         bpy.ops.object.mode_set(mode="OBJECT")
         context.view_layer.objects.active = game_rig
         bpy.ops.object.mode_set(mode="EDIT")
@@ -146,9 +146,10 @@ def duplicate_bone(context: types.Context):
                 edit_bones.remove(bone)
             else:
                 bone.use_connect = False
+                bone.parent = None
         bpy.ops.object.mode_set(mode="POSE")
         pose_bones = game_rig.pose.bones
-         
+
         for bone in pose_bones:
             for constraint in bone.constraints:
                 bone.constraints.remove(constraint)
@@ -181,21 +182,40 @@ def duplicate_bone(context: types.Context):
                     do_bbone=True,
                     do_custom_props=True,
                 ),
-            )            
+            )
+            bake_action[0].name = track.name+'_b'
+            new_track = game_rig.animation_data.nla_tracks.new()
+            new_track.name = track.name
+            new_track.strips.new(bake_action[0].name, 0, bake_action[0])
+            track.is_solo = False
 
         for bone in pose_bones:
             for constraint in bone.constraints:
                 bone.constraints.remove(constraint)
-        
+
+        bpy.ops.object.mode_set(mode = mode)
+        original_rig.select_set(False)
+
     for obj in objects:
         for modifier in obj.modifiers:
-          if modifier.type == "ARMATURE":
-              modifier.object = game_rig 
-        if obj.type == "MESH":
-            obj.parent = game_rig
+            if modifier.type == "ARMATURE":
+                modifier.object = game_rig 
+                obj.parent = game_rig
 
-    bpy.ops.object.mode_set(mode = mode)
-            
+def restore_rig(context: types.Context):
+    objects = context.selected_objects
+    game_rig:types.Object = None
+    for obj in objects:
+        for modifier in obj.modifiers:
+            if modifier.type == "ARMATURE":
+                game_rig = modifier.object
+                game_rig['original_rig'].select_set(True)
+                obj.parent = modifier.object['original_rig']
+                modifier.object = modifier.object['original_rig']
+    for track in game_rig.animation_data.nla_tracks:
+        bpy.data.actions.remove(track.strips[0].action)
+    bpy.data.objects.remove(game_rig)
+    
 def reparent_rigify_bone(context: types.Context):
     mode = context.object.mode
     if (context.active_object.type == 'ARMATURE'):
@@ -550,7 +570,7 @@ class Btool_export(bpy.types.Operator):
         #     reparent_rigify_bone(context)        
         context.view_layer.objects.active = activeobject
 
-        duplicate_bone(context)
+        duplicate_rig(context)
 
         if (self.type == "fbx"):
             dir_fbx = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
@@ -650,6 +670,8 @@ class Btool_export(bpy.types.Operator):
             
             node_tree.links.new(outputnode.inputs['Surface'], emissionnode.outputs['Emission'])
             nodes.remove(principlednode)
+
+        restore_rig(context)
 
         return {'FINISHED'}
 
