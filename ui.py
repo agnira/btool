@@ -1,7 +1,7 @@
 # context.area: VIEW_3D
 
 import bpy
-from bpy import types, context
+from bpy import types
 from bpy.utils import register_class, unregister_class
 from bpy.types import KeyConfig, UILayout
 
@@ -16,7 +16,7 @@ class BanaspateamPanel:
 class UI_PT_BT(types.Panel, BanaspateamPanel):
     bl_label = "BNSPT"
 
-    def draw(self, c: context):
+    def draw(self, c: types.Context):
         layout = self.layout
         main_menu(layout)
 
@@ -24,7 +24,7 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
     bl_label = "Options"
     bl_parent_id = "UI_PT_BT"
 
-    def draw(self, c: context):
+    def draw(self, c: types.Context):
         scene = c.scene
         layout = self.layout
         layout.prop(data=scene, property='b_e_export_path', text="export path") 
@@ -35,16 +35,31 @@ class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
     bl_parent_id = "UI_PT_BT"
 
-    def draw(self, context: context):
+    def draw(self, context: types.Context):
         layout = self.layout
         layout.operator("btool.import_mixamo_animations")
+
+class UI_PT_ANIMATION(types.Panel, BanaspateamPanel):
+    bl_label = "Animation Tool"
+    bl_parent_id = "UI_PT_BT"
+
+    def draw(self, context: types.Context):
+        layout = self.layout
+        layout.label(text="Curve Offset Tool")
+        layout.separator()
+        if (context.active_object):
+            if (context.active_object.type == 'ARMATURE'):
+                if (context.active_object.mode == 'POSE'):
+                    for bone in context.selected_pose_bones:
+                        layout.label(text=bone.name)
+
 
 # menu
 class UI_PT_BTMenu(types.Menu):
     bl_label = "BNSPT Menu"
     bl_idname = "BT_MT_menu"
 
-    def draw(self, c: context):
+    def draw(self, context: types.Context):
         layout = self.layout
         main_menu(layout)
 
@@ -65,7 +80,7 @@ class UI_PT_BTRenameDataMenu(types.Menu):
 class UI_PT_BTExportMenu(types.Menu):
     bl_label, bl_idname = "BNSPT Export", "BT_MT_export_menu"
     
-    def draw(self, context: context):
+    def draw(self, context: types.Context):
         layout = self.layout
         fbx_op = layout.operator("btool.export", text="fbx")
         fbx_op["type"]="fbx"
@@ -98,6 +113,7 @@ classes = (
     UI_PT_BTMenu,
     UI_PT_BTRenameDataMenu,
     UI_PT_BTExportMenu,
+    UI_PT_ANIMATION,
     UI_PT_OPT,
 )
 
