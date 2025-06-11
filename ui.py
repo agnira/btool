@@ -44,6 +44,7 @@ class UI_PT_ANIMATION(types.Panel, BanaspateamPanel):
     bl_parent_id = "UI_PT_BT"
 
     def draw(self, context: types.Context):
+        scene = context.scene
         layout = self.layout
         layout.label(text="Curve Offset Tool")
         layout.separator()
@@ -52,8 +53,14 @@ class UI_PT_ANIMATION(types.Panel, BanaspateamPanel):
                 if (context.active_object.mode == 'POSE'):
                     for bone in context.selected_pose_bones:
                         layout.label(text=bone.name)
-
-
+                        layout.prop(data=scene, property='a_curve_strength', text="strength")
+                        layout.prop(data=scene, property='a_curve_rot_w', text="rot w")
+                        layout.prop(data=scene, property='a_curve_rot_x', text="rot x")
+                        layout.prop(data=scene, property='a_curve_rot_y', text="rot y")
+                        layout.prop(data=scene, property='a_curve_rot_z', text="rot z")
+                        layout.prop(data=scene, property='a_curve_pos_x', text="pos x")
+                        layout.prop(data=scene, property='a_curve_pos_y', text="pos y")
+                        layout.prop(data=scene, property='a_curve_pos_z', text="pos z")     
 # menu
 class UI_PT_BTMenu(types.Menu):
     bl_label = "BNSPT Menu"
@@ -126,6 +133,14 @@ def register():
     bpy.types.Scene.b_e_export_path = bpy.props.StringProperty("b_e_export_path")
     bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
     bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
+    bpy.types.Scene.a_curve_strength = bpy.props.FloatProperty("a_curve_strength")
+    bpy.types.Scene.a_curve_rot_w =  bpy.props.FloatProperty("a_curve_rot_w")
+    bpy.types.Scene.a_curve_rot_x =  bpy.props.FloatProperty("a_curve_rot_x")
+    bpy.types.Scene.a_curve_rot_y =  bpy.props.FloatProperty("a_curve_rot_y")
+    bpy.types.Scene.a_curve_rot_z =  bpy.props.FloatProperty("a_curve_rot_z")
+    bpy.types.Scene.a_curve_pos_x =  bpy.props.FloatProperty("a_curve_pos_x")
+    bpy.types.Scene.a_curve_pos_y =  bpy.props.FloatProperty("a_curve_pos_y")
+    bpy.types.Scene.a_curve_pos_z =  bpy.props.FloatProperty("a_curve_pos_z")
 
     key_config: KeyConfig = bpy.context.window_manager.keyconfigs.addon
 
