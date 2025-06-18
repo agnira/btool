@@ -126,6 +126,7 @@ def unselect_object():
     ops.object.select_all(action='DESELECT')
 
 def duplicate_rig(context: types.Context):
+    active_object = context.active_object
     mode = context.object.mode
     objects = context.selected_objects
     game_rig = None
@@ -201,6 +202,8 @@ def duplicate_rig(context: types.Context):
             if modifier.type == "ARMATURE":
                 modifier.object = game_rig 
                 obj.parent = game_rig
+    
+    return active_object
 
 def restore_rig(context: types.Context):
     objects = context.selected_objects
@@ -570,7 +573,7 @@ class Btool_export(bpy.types.Operator):
         #     reparent_rigify_bone(context)        
         context.view_layer.objects.active = activeobject
 
-        duplicate_rig(context)
+        active_object = duplicate_rig(context)
 
         if (self.type == "fbx"):
             dir_fbx = os.path.join(os.path.dirname(bpy.data.filepath), "fbx")
@@ -672,6 +675,8 @@ class Btool_export(bpy.types.Operator):
             nodes.remove(principlednode)
 
         restore_rig(context)
+
+        context.view_layer.objects.active = active_object
 
         return {'FINISHED'}
 
