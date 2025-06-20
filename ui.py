@@ -30,6 +30,7 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
         layout.prop(data=scene, property='b_e_export_path', text="export path") 
         layout.prop(data=scene, property='b_e_vcol', text="export use vcol")
         layout.prop(data=scene, property='b_e_flatten_h', text="export flatten hierarchy")
+        layout.prop(data=scene, property='b_e_stepping_interpolation', text="stepping interpolation on animation")
 
 class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
@@ -133,6 +134,7 @@ def register():
     bpy.types.Scene.b_e_export_path = bpy.props.StringProperty("b_e_export_path")
     bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
     bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
+    bpy.types.Scene.b_e_stepping_interpolation = bpy.props.BoolProperty('b_e_stepping_interpolation')
     bpy.types.Scene.a_curve_strength = bpy.props.FloatProperty("a_curve_strength")
     bpy.types.Scene.a_curve_rot_w =  bpy.props.FloatProperty("a_curve_rot_w")
     bpy.types.Scene.a_curve_rot_x =  bpy.props.FloatProperty("a_curve_rot_x")

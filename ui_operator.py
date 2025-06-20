@@ -185,6 +185,10 @@ def duplicate_rig(context: types.Context):
                 ),
             )
             bake_action[0].name = track.name+'_b'
+            if context.scene.b_e_stepping_interpolation == True:
+                for fcurve in bake_action[0].fcurves:
+                    for keyframe in fcurve.keyframe_points:
+                        keyframe.interpolation = "CONSTANT"
             new_track = game_rig.animation_data.nla_tracks.new()
             new_track.name = track.name
             new_track.strips.new(bake_action[0].name, 0, bake_action[0])
@@ -635,6 +639,8 @@ class Btool_export(bpy.types.Operator):
             directory = os.path.join(os.path.dirname(bpy.data.filepath), "gltf")
             if scene.b_e_export_path != '':
                 directory = scene.b_e_export_path
+            if scene.b_e_stepping_interpolation == True:
+                gltf_options["export_sampling_interpolation_fallback"] = 'STEP'
             # filename = bpy.path.basename(
             # bpy.data.filepath).split('.')[0]+".gltf"
             filename = context.active_object.users_collection[0].name
