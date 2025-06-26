@@ -119,6 +119,12 @@ fbx_options = dict(
                 add_leaf_bones=False,
             )
 
+def is_rigify(object: types.Object):
+    if "rig_id" in object.data:
+        return True
+    else:
+        return False
+
 def unselect_object():
     # D = bpy.data
     # for o in D.objects:
@@ -131,7 +137,7 @@ def duplicate_rig(context: types.Context):
     objects = context.selected_objects
     game_rig = None
     for obj in objects:
-        if obj.type == "ARMATURE":
+        if obj.type == "ARMATURE" and is_rigify(obj):
             game_rig = obj.copy()
             obj.users_collection[0].objects.link(game_rig)
             game_rig['original_rig'] = obj
@@ -203,7 +209,7 @@ def duplicate_rig(context: types.Context):
 
     for obj in objects:
         for modifier in obj.modifiers:
-            if modifier.type == "ARMATURE":
+            if modifier.type == "ARMATURE" and game_rig != None:
                 modifier.object = game_rig 
                 obj.parent = game_rig
     
@@ -215,13 +221,16 @@ def restore_rig(context: types.Context):
     for obj in objects:
         for modifier in obj.modifiers:
             if modifier.type == "ARMATURE":
-                game_rig = modifier.object
-                game_rig['original_rig'].select_set(True)
-                obj.parent = modifier.object['original_rig']
-                modifier.object = modifier.object['original_rig']
-    for track in game_rig.animation_data.nla_tracks:
-        bpy.data.actions.remove(track.strips[0].action)
-    bpy.data.objects.remove(game_rig)
+                if 'original_rig' in modifier.object:
+                    game_rig = modifier.object
+                    game_rig['original_rig'].select_set(True)
+                    obj.parent = modifier.object['original_rig']
+                    modifier.object = modifier.object['original_rig']
+    print('gamerig', game_rig)
+    if game_rig:
+        for track in game_rig.animation_data.nla_tracks:
+            bpy.data.actions.remove(track.strips[0].action)
+        bpy.data.objects.remove(game_rig)
     
 def reparent_rigify_bone(context: types.Context):
     mode = context.object.mode
