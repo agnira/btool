@@ -525,6 +525,42 @@ class Btool_import_mixamo_animations(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class Btool_import_fbx_animations(bpy.types.Operator):
+    bl_idname = "btool.import_fbx_animations"
+    bl_label = "Import fbx Animations"
+
+    files: CollectionProperty(
+        type=bpy.types.OperatorFileListElement,
+        options={'HIDDEN', 'SKIP_SAVE'},
+    )
+    directory: StringProperty(
+        subtype='DIR_PATH',
+    )
+
+    @classmethod
+    def poll(cls, context: types.Context):
+        return context.active_object and context.active_object.type in {'ARMATURE'}
+
+    def execute(self, context: types.Context):
+        target = context.active_object
+        for file in self.files:
+            filepath = os.path.join(self.directory, file.name)
+            if filepath.endswith(".fbx"):
+                bpy.ops.import_scene.fbx(filepath=filepath, use_anim=True)
+                context.active_object.animation_data.action.name = file.name.split('.')[0]
+                print(context.active_object.name)
+                print(file.name)
+                bpy.ops.object.delete()
+
+        bpy.ops.outliner.orphans_purge()
+        context.view_layer.objects.active = target
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
 class Btool_export(bpy.types.Operator):
     bl_idname = "btool.export"
     bl_label = "Export File"
@@ -773,6 +809,7 @@ classes = (
     Btool_render_preview,
     Btool_set_rigify_type,
     Btool_reparent_separated_bone_rigify,
+    Btool_import_fbx_animations,
 )
 
 

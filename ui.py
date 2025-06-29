@@ -111,6 +111,7 @@ def main_menu(layout: UILayout):
                     text="Cloth Bones Form Mesh")
     layout.operator("btool.reparent_separated_bone_rigify")
     layout.separator()
+    layout.operator("btool.import_fbx_animations")
     layout.operator("btool.import_mixamo_animations")
     layout.operator("btool.set_rigify_type")
 
