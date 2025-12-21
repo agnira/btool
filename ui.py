@@ -26,17 +26,11 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
     def draw(self, context: types.Context):
         scene = context.scene
         layout = self.layout
-        layout.prop(data=scene, property="b_e_export_path", text="export path")
-        layout.prop(data=scene, property="b_e_vcol", text="export use vcol")
-        layout.prop(
-            data=scene, property="b_e_flatten_h", text="export flatten hierarchy"
-        )
-        layout.prop(
-            data=scene,
-            property="b_e_stepping_interpolation",
-            text="stepping interpolation on animation",
-        )
-
+        layout.prop(data=scene, property='b_e_export_path', text="export path") 
+        layout.prop(data=scene, property='b_e_vcol', text="export use vcol")
+        layout.prop(data=scene, property='b_e_flatten_h', text="export flatten hierarchy")
+        layout.prop(data=scene, property='b_e_stepping_interpolation', text="stepping interpolation on animation")
+        layout.prop(data=scene, property='b_e_only_active', text="export only active")
 
 class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
@@ -88,11 +82,12 @@ class UI_PT_BTRenameDataMenu(types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("btool.rename_data", text="(1) Rename Data")
-        layout.operator(
-            "btool.rename_data_with_ucupaint",
-            text="(2) Rename Data w/ Ucupaint Node",
-        )
+        layout.operator("btool.rename_data",
+                        text="(1) Rename Data")
+        layout.operator("btool.rename_data_with_ucupaint",
+                        text="(2) Rename Data w/ Ucupaint Node")
+        layout.operator('btool.rename_active_collection_to_filename',
+                        text="(3) Rename Active Collection to Filename")
 
 
 class UI_PT_BTExportMenu(types.Menu):
@@ -123,7 +118,8 @@ def main_menu(layout):
     layout.operator("btool.import_fbx_animations")
     layout.operator("btool.import_mixamo_animations")
     layout.operator("btool.set_rigify_type")
-    # layout.operator("btool.move_uv_to_front", text="Move Active UV to Front")
+    layout.separator()
+    layout.operator("btool.change_zero_scale_keyframe")
 
 
 classes = (
@@ -143,24 +139,19 @@ def register():
     for c in classes:
         register_class(c)
 
-    bpy.types.Scene.b_e_export_path = bpy.props.StringProperty(
-        name="b_e_export_path"
-    )
-    bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty(name="b_e_vcol")
-    bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty(name="b_e_flatten_h")
-    bpy.types.Scene.b_e_stepping_interpolation = bpy.props.BoolProperty(
-        name="b_e_stepping_interpolation"
-    )
-    bpy.types.Scene.a_curve_strength = bpy.props.FloatProperty(
-        name="a_curve_strength"
-    )
-    bpy.types.Scene.a_curve_rot_w = bpy.props.FloatProperty(name="a_curve_rot_w")
-    bpy.types.Scene.a_curve_rot_x = bpy.props.FloatProperty(name="a_curve_rot_x")
-    bpy.types.Scene.a_curve_rot_y = bpy.props.FloatProperty(name="a_curve_rot_y")
-    bpy.types.Scene.a_curve_rot_z = bpy.props.FloatProperty(name="a_curve_rot_z")
-    bpy.types.Scene.a_curve_pos_x = bpy.props.FloatProperty(name="a_curve_pos_x")
-    bpy.types.Scene.a_curve_pos_y = bpy.props.FloatProperty(name="a_curve_pos_y")
-    bpy.types.Scene.a_curve_pos_z = bpy.props.FloatProperty(name="a_curve_pos_z")
+    bpy.types.Scene.b_e_export_path = bpy.props.StringProperty("b_e_export_path")
+    bpy.types.Scene.b_e_vcol = bpy.props.BoolProperty("b_e_vcol")
+    bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
+    bpy.types.Scene.b_e_stepping_interpolation = bpy.props.BoolProperty('b_e_stepping_interpolation')
+    bpy.types.Scene.b_e_only_active = bpy.props.BoolProperty('b_e_only_active')
+    bpy.types.Scene.a_curve_strength = bpy.props.FloatProperty("a_curve_strength")
+    bpy.types.Scene.a_curve_rot_w =  bpy.props.FloatProperty("a_curve_rot_w", override={'LIBRARY_OVERRIDABLE'})
+    bpy.types.Scene.a_curve_rot_x =  bpy.props.FloatProperty("a_curve_rot_x")
+    bpy.types.Scene.a_curve_rot_y =  bpy.props.FloatProperty("a_curve_rot_y")
+    bpy.types.Scene.a_curve_rot_z =  bpy.props.FloatProperty("a_curve_rot_z")
+    bpy.types.Scene.a_curve_pos_x =  bpy.props.FloatProperty("a_curve_pos_x")
+    bpy.types.Scene.a_curve_pos_y =  bpy.props.FloatProperty("a_curve_pos_y")
+    bpy.types.Scene.a_curve_pos_z =  bpy.props.FloatProperty("a_curve_pos_z")
 
     key_config: KeyConfig = bpy.context.window_manager.keyconfigs.addon
 
