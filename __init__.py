@@ -1,32 +1,34 @@
 bl_info = {
-    "name" : "Btool",
-    "author" : "Agni Rakai Sahakarya",
-    "description" : "",
-    "blender" : (3, 3, 0),
-    "version" : (0, 0, 1),
-    "location" : "",
-    "warning" : "",
-    "category" : "Object"
+    "name": "Btool",
+    "author": "Agni Rakai Sahakarya",
+    "description": "Banaspateam internal workflow automation tools for Blender",
+    "blender": (4, 2, 0),
+    "version": (1, 2, 7),
+    "location": "View3D > Sidebar > Tool > BNSPT",
+    "warning": "",
+    "category": "Object",
 }
 
 if "bpy" in locals():
-    import imp
-    imp.reload(ui_operator)
-    imp.reload(ui)
+    import importlib
+    importlib.reload(utils)
+    importlib.reload(operators)
+    importlib.reload(ui)
 else:
-    from . import ui, ui_operator
+    from . import utils, operators, ui
 
 import bpy
 
+
 def register():
-    ui_operator.register()
+    operators.register()
     ui.register()
-    pass
+
 
 def unregister():
-    ui_operator.unregister()
+    operators.unregister()
     ui.unregister()
-    pass
+
 
 if __name__ == "__main__":
     register()
