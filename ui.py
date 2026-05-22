@@ -135,6 +135,11 @@ classes = (
 bt_keymaps = []
 
 
+def seamless_menu_draw(self, context):
+    self.layout.separator()
+    self.layout.operator("btool.make_seamless")
+
+
 def register():
     for c in classes:
         register_class(c)
@@ -152,6 +157,8 @@ def register():
     bpy.types.Scene.a_curve_pos_x =  bpy.props.FloatProperty("a_curve_pos_x")
     bpy.types.Scene.a_curve_pos_y =  bpy.props.FloatProperty("a_curve_pos_y")
     bpy.types.Scene.a_curve_pos_z =  bpy.props.FloatProperty("a_curve_pos_z")
+
+    bpy.types.IMAGE_MT_image.append(seamless_menu_draw)
 
     key_config: KeyConfig = bpy.context.window_manager.keyconfigs.addon
 
@@ -175,6 +182,8 @@ def register():
 def unregister():
     for c in classes:
         unregister_class(c)
+
+    bpy.types.IMAGE_MT_image.remove(seamless_menu_draw)
 
     for km, keymap_item in bt_keymaps:
         km.keymap_items.remove(keymap_item)

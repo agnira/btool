@@ -11,7 +11,7 @@ from .export_op import Btool_export
 from .render_op import Btool_render_preview
 # from .uv_op import Btool_move_uv_to_front
 from .image_rename_op import Btool_rename_images
-
+from .seamless_op import Btool_make_seamless
 
 classes = (
     Btool_compile,
@@ -26,6 +26,7 @@ classes = (
     Btool_import_fbx_animations,
     # Btool_move_uv_to_front,
     Btool_rename_images,
+    Btool_make_seamless,
 )
 
 
