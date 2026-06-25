@@ -90,6 +90,16 @@ class UI_PT_BTRenameDataMenu(types.Menu):
                         text="(3) Rename Active Collection to Filename")
 
 
+class UI_PT_BTOutlinerMenu(types.Menu):
+    bl_label = "BNSPT Outliner"
+    bl_idname = "BT_MT_outliner_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("btool.rename_images")
+        layout.operator("btool.compress_images")
+
+
 class UI_PT_BTExportMenu(types.Menu):
     bl_label = "BNSPT Export"
     bl_idname = "BT_MT_export_menu"
@@ -127,6 +137,7 @@ classes = (
     UI_PT_MIXAMO,
     UI_PT_BTMenu,
     UI_PT_BTRenameDataMenu,
+    UI_PT_BTOutlinerMenu,
     UI_PT_BTExportMenu,
     UI_PT_ANIMATION,
     UI_PT_OPT,
@@ -138,6 +149,7 @@ bt_keymaps = []
 def seamless_menu_draw(self, context):
     self.layout.separator()
     self.layout.operator("btool.make_seamless")
+    self.layout.operator("btool.mirror_image")
 
 
 def register():
@@ -174,8 +186,9 @@ def register():
             name="Outliner", space_type="OUTLINER"
         )
         kmi_outliner = km_outliner.keymap_items.new(
-            "btool.rename_images", type="D", value="PRESS"
+            "wm.call_menu", type="D", value="PRESS"
         )
+        kmi_outliner.properties.name = UI_PT_BTOutlinerMenu.bl_idname
         bt_keymaps.append((km_outliner, kmi_outliner))
 
 
