@@ -93,7 +93,8 @@ class Btool_compress_images(bpy.types.Operator):
                     skipped.append(img.name)
                     continue
 
-                img.pack(filepath=temp_path)
+                with open(temp_path, 'rb') as f:
+                    img.packed_file.data = f.read()
 
                 safe_name = "".join(c if c.isalnum() or c in '-_' else '_' for c in img.name)
                 img.filepath_raw = f"//{safe_name}.webp"
