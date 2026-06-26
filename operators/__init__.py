@@ -2,7 +2,7 @@ from .compile_op import Btool_compile
 from .rename_op import Btool_rename_data
 from .rigging_op import (
     Btool_metarig_to_applied,
-    Btool_create_cloth_bones,
+    Btool_bones_from_vertices,
     Btool_set_rigify_type,
     Btool_reparent_separated_bone_rigify,
 )
@@ -19,7 +19,7 @@ classes = (
     Btool_compile,
     Btool_rename_data,
     Btool_metarig_to_applied,
-    Btool_create_cloth_bones,
+    Btool_bones_from_vertices,
     Btool_import_mixamo_animations,
     Btool_export,
     Btool_render_preview,

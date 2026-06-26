@@ -1,6 +1,7 @@
 import bpy
+import bmesh
 from bpy import types, ops
-from bpy.props import StringProperty
+from bpy.props import StringProperty, FloatProperty
 
 
 class Btool_metarig_to_applied(types.Operator):
@@ -47,76 +48,67 @@ class Btool_metarig_to_applied(types.Operator):
         return {"FINISHED"}
 
 
-class Btool_create_cloth_bones(types.Operator):
-    bl_idname = "btool.create_cloth_bones"
-    bl_label = "Cloth Bones Form Mesh"
-    bl_description = "mark seam for bones line, mark sharp for the root mark"
+class Btool_bones_from_vertices(types.Operator):
+    bl_idname = "btool.bones_from_vertices"
+    bl_label = "Bones From Vertices"
+    bl_description = "Create bones from selected vertices along vertex normals"
+
+    bone_length: FloatProperty(
+        name="Bone Length",
+        default=0.1,
+        min=0.001,
+    )
+
+    @classmethod
+    def poll(cls, context: types.Context):
+        return (
+            context.object
+            and context.object.type == "MESH"
+            and context.object.mode == "EDIT"
+        )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context: types.Context):
+        self.layout.prop(self, "bone_length")
 
     def execute(self, context: types.Context):
-        cloth_mesh = context.object
-        if not cloth_mesh:
-            self.report({"WARNING"}, "Please select mesh guide.")
-            return {"CANCELLED"}
-        if cloth_mesh.type != "MESH":
-            self.report({"WARNING"}, "Please select mesh guide.")
+        mesh_obj = context.object
+        mesh = mesh_obj.data
+        matrix = mesh_obj.matrix_world
+
+        bm = bmesh.from_edit_mesh(mesh)
+        selected_verts = [v for v in bm.verts if v.select]
+
+        if not selected_verts:
+            self.report({"WARNING"}, "No vertices selected")
+            bm.free()
             return {"CANCELLED"}
 
-        points = []
-        marked_edges = [
-            edge for edge in cloth_mesh.data.edges if edge.use_edge_sharp
-        ]
-        for edge in marked_edges:
-            vertex_1 = cloth_mesh.data.vertices[edge.vertices[0]].co
-            vertex_2 = cloth_mesh.data.vertices[edge.vertices[1]].co
-            if vertex_1 not in points:
-                points.append(vertex_1)
-            if vertex_2 not in points:
-                points.append(vertex_2)
+        vert_data = []
+        for v in selected_verts:
+            pos = matrix @ v.co
+            normal = matrix.to_3x3() @ v.normal
+            if normal.length_squared > 0:
+                normal.normalize()
+            else:
+                normal = (0, 0, 1)
+            vert_data.append((pos, normal))
+
+        bm.free()
+
+        ops.object.mode_set(mode="OBJECT")
         ops.object.armature_add(
             enter_editmode=True, align="WORLD", location=(0, 0, 0)
         )
         armature = context.object
+        edit_bones = armature.data.edit_bones
 
-        ops.armature.select_all(action="DESELECT")
-        ops.armature.select_all(action="SELECT")
-        ops.armature.delete()
-
-        ops.object.mode_set(mode="EDIT")
-
-        bones = []
-
-        for row_index, edge in enumerate(cloth_mesh.data.edges):
-            if edge.use_seam:
-                bone_name = f"Row_{row_index}_Bone"
-                ops.armature.bone_primitive_add(name=bone_name)
-                new_bone = armature.data.edit_bones[bone_name]
-                new_bone.head = (
-                    cloth_mesh.matrix_world
-                    @ cloth_mesh.data.vertices[edge.vertices[0]].co
-                )
-                new_bone.tail = (
-                    cloth_mesh.matrix_world
-                    @ cloth_mesh.data.vertices[edge.vertices[1]].co
-                )
-                bones.append(new_bone)
-
-        for child_bone in bones:
-            for parent_bone in bones:
-                if (
-                    parent_bone != child_bone
-                    and (parent_bone.tail - child_bone.head).length < 0.001
-                ):
-                    child_bone.parent = parent_bone
-                    child_bone.use_connect = True
-            child_bone.select = False
-        for point in points:
-            for bone in bones:
-                if (bone.tail - point).length < 0.001:
-                    bone.select = True
-                    for parent in bone.parent_recursive:
-                        parent.select = True
-
-        ops.armature.switch_direction()
+        for i, (pos, normal) in enumerate(vert_data):
+            bone = edit_bones.new(f"Bone_{i}")
+            bone.head = pos
+            bone.tail = pos + normal * self.bone_length
 
         ops.object.mode_set(mode="OBJECT")
         ops.object.select_all(action="DESELECT")

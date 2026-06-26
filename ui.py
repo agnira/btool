@@ -122,14 +122,14 @@ def main_menu(layout):
     layout.separator()
     layout.operator("btool.render_preview")
     layout.operator("btool.metarig_to_applied", text="Metarig To Applyed Rig")
-    layout.operator("btool.create_cloth_bones", text="Cloth Bones Form Mesh")
+    layout.operator("btool.bones_from_vertices", text="Bones From Vertices")
     layout.operator("btool.reparent_separated_bone_rigify")
     layout.separator()
     layout.operator("btool.import_fbx_animations")
     layout.operator("btool.import_mixamo_animations")
     layout.operator("btool.set_rigify_type")
     layout.separator()
-    layout.operator("btool.change_zero_scale_keyframe")
+    # layout.operator("btool.change_zero_scale_keyframe")
 
 
 classes = (

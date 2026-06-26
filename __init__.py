@@ -23,9 +23,13 @@ import bpy
 def register():
     operators.register()
     ui.register()
+    from .operators.timetracker_op import register_tracker
+    register_tracker()
 
 
 def unregister():
+    from .operators.timetracker_op import unregister_tracker
+    unregister_tracker()
     operators.unregister()
     ui.unregister()
 

@@ -73,14 +73,14 @@ Sets selected pose bones to `basic.super_copy` rigify type with `bone` widget.
 2. Select the bones to configure
 3. Click the operator
 
-### 5. Cloth Bones From Mesh
-Generates an armature with bones following mesh edges. Seams define bone flow, sharp edges mark root points.
+### 5. Bones From Vertices
+Generates an armature with one bone per selected mesh vertex, pointing along the vertex normal direction.
 
 **Usage:**
-1. In Edit mode on a mesh, mark seams along desired bone paths (`Edge > Mark Seam`)
-2. Mark sharp edges at root/start points (`Edge > Mark Sharp`)
-3. Click `Cloth Bones Form Mesh`
-4. A new armature is created with bones along each seam, connected head-to-tail
+1. In Edit mode on a mesh, select vertices
+2. Click `Bones From Vertices`
+3. Set the bone length in the dialog
+4. A new armature is created with bones at each vertex position
 
 ### 6. Mixamo Animation Importer
 Imports multiple Mixamo FBX animations and transfers them to the target rig using the `mr.import_anim_to_rig` operator.
