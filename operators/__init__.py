@@ -14,6 +14,7 @@ from .image_rename_op import Btool_rename_images
 from .seamless_op import Btool_make_seamless
 from .compress_img_op import Btool_compress_images
 from .mirror_img_op import Btool_mirror_image
+from .cleanup_op import classes as cleanup_classes
 
 classes = (
     Btool_compile,
@@ -31,6 +32,7 @@ classes = (
     Btool_make_seamless,
     Btool_compress_images,
     Btool_mirror_image,
+    *cleanup_classes,
 )
 
 

@@ -2,6 +2,7 @@ import bpy
 from bpy import types
 from bpy.utils import register_class, unregister_class
 from bpy.types import KeyConfig
+from .operators.cleanup_op import CleanupItem
 
 
 class BanaspateamPanel:
@@ -31,6 +32,27 @@ class UI_PT_OPT(types.Panel, BanaspateamPanel):
         layout.prop(data=scene, property='b_e_flatten_h', text="export flatten hierarchy")
         layout.prop(data=scene, property='b_e_stepping_interpolation', text="stepping interpolation on animation")
         layout.prop(data=scene, property='b_e_only_active', text="export only active")
+
+class UI_PT_COMPRESS(types.Panel, BanaspateamPanel):
+    bl_label = "Compress Images"
+    bl_parent_id = "UI_PT_BT"
+
+    def draw(self, context: types.Context):
+        scene = context.scene
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.prop(scene, "b_comp_format", expand=True)
+
+        layout.prop(scene, "b_comp_quality", slider=True)
+
+        row = layout.row()
+        row.prop(scene, "b_comp_lossless")
+        row.enabled = scene.b_comp_format != 'JPEG'
+
+        layout.separator()
+        layout.label(text="Set options, then press D in Outliner", icon="INFO")
+
 
 class UI_PT_MIXAMO(types.Panel, BanaspateamPanel):
     bl_label = "Mixamo"
@@ -65,6 +87,41 @@ class UI_PT_ANIMATION(types.Panel, BanaspateamPanel):
                         layout.prop(data=scene, property="a_curve_pos_x", text="pos x")
                         layout.prop(data=scene, property="a_curve_pos_y", text="pos y")
                         layout.prop(data=scene, property="a_curve_pos_z", text="pos z")
+
+
+class UI_PT_CLEANUP(types.Panel, BanaspateamPanel):
+    bl_label = "Data Cleanup"
+    bl_parent_id = "UI_PT_BT"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context: types.Context):
+        layout = self.layout
+        scene = context.scene
+
+        row = layout.row()
+        row.operator("btool.scan_datablocks", text="Refresh List")
+
+        row = layout.row()
+        row.prop(scene, "cleanup_search", text="", icon="VIEWZOOM")
+        row.prop(scene, "cleanup_filter", text="")
+
+        if len(scene.cleanup_items) == 0:
+            layout.label(text="No items — click Refresh")
+        else:
+            layout.template_list(
+                "DATA_UL_cleanup_items",
+                "",
+                scene,
+                "cleanup_items",
+                scene,
+                "cleanup_active_index",
+                rows=8,
+            )
+
+            row = layout.row(align=True)
+            row.operator("btool.select_datablock", text="Select")
+            row.operator("btool.remove_selected_datablock", text="Remove")
+            row.operator("btool.purge_unused_datablocks", text="Purge Unused")
 
 
 class UI_PT_BTMenu(types.Menu):
@@ -134,6 +191,7 @@ def main_menu(layout):
 
 classes = (
     UI_PT_BT,
+    UI_PT_COMPRESS,
     UI_PT_MIXAMO,
     UI_PT_BTMenu,
     UI_PT_BTRenameDataMenu,
@@ -141,6 +199,7 @@ classes = (
     UI_PT_BTExportMenu,
     UI_PT_ANIMATION,
     UI_PT_OPT,
+    UI_PT_CLEANUP,
 )
 
 bt_keymaps = []
@@ -161,6 +220,23 @@ def register():
     bpy.types.Scene.b_e_flatten_h = bpy.props.BoolProperty("b_e_flatten_h")
     bpy.types.Scene.b_e_stepping_interpolation = bpy.props.BoolProperty('b_e_stepping_interpolation')
     bpy.types.Scene.b_e_only_active = bpy.props.BoolProperty('b_e_only_active')
+
+    bpy.types.Scene.b_comp_format = bpy.props.EnumProperty(
+        name="Format",
+        items=[
+            ('WEBP', "WebP", "WebP format (supports alpha)"),
+            ('JPEG', "JPEG", "JPEG format (no alpha, smaller for photos)"),
+            ('SMART', "Smart", "Auto: JPEG if no alpha, WebP if alpha present"),
+        ],
+        default='SMART',
+    )
+    bpy.types.Scene.b_comp_quality = bpy.props.IntProperty(
+        name="Quality", default=80, min=0, max=100, subtype='PERCENTAGE',
+    )
+    bpy.types.Scene.b_comp_lossless = bpy.props.BoolProperty(
+        name="Lossless", default=False,
+    )
+
     bpy.types.Scene.a_curve_strength = bpy.props.FloatProperty("a_curve_strength")
     bpy.types.Scene.a_curve_rot_w =  bpy.props.FloatProperty("a_curve_rot_w", override={'LIBRARY_OVERRIDABLE'})
     bpy.types.Scene.a_curve_rot_x =  bpy.props.FloatProperty("a_curve_rot_x")
@@ -168,7 +244,28 @@ def register():
     bpy.types.Scene.a_curve_rot_z =  bpy.props.FloatProperty("a_curve_rot_z")
     bpy.types.Scene.a_curve_pos_x =  bpy.props.FloatProperty("a_curve_pos_x")
     bpy.types.Scene.a_curve_pos_y =  bpy.props.FloatProperty("a_curve_pos_y")
-    bpy.types.Scene.a_curve_pos_z =  bpy.props.FloatProperty("a_curve_pos_z")
+    bpy.types.Scene.a_curve_pos_z = bpy.props.FloatProperty("a_curve_pos_z")
+
+    bpy.types.Scene.cleanup_items = bpy.props.CollectionProperty(type=CleanupItem)
+    bpy.types.Scene.cleanup_active_index = bpy.props.IntProperty(default=0)
+    bpy.types.Scene.cleanup_search = bpy.props.StringProperty(
+        name="Search",
+        description="Filter items by name",
+        default="",
+    )
+    bpy.types.Scene.cleanup_filter = bpy.props.EnumProperty(
+        name="Filter",
+        description="Filter by datablock type",
+        items=[
+            ('ALL', 'All', 'Show all datablocks'),
+            ('IMAGE', 'Images', 'Images only'),
+            ('MESH', 'Meshes', 'Meshes only'),
+            ('MATERIAL', 'Materials', 'Materials only'),
+            ('ARMATURE', 'Armatures', 'Armatures only'),
+            ('ACTION', 'Actions', 'Actions only'),
+        ],
+        default='ALL',
+    )
 
     bpy.types.IMAGE_MT_image.append(seamless_menu_draw)
 
@@ -195,6 +292,15 @@ def register():
 def unregister():
     for c in classes:
         unregister_class(c)
+
+    del bpy.types.Scene.cleanup_items
+    del bpy.types.Scene.cleanup_active_index
+    del bpy.types.Scene.cleanup_search
+    del bpy.types.Scene.cleanup_filter
+
+    del bpy.types.Scene.b_comp_format
+    del bpy.types.Scene.b_comp_quality
+    del bpy.types.Scene.b_comp_lossless
 
     bpy.types.IMAGE_MT_image.remove(seamless_menu_draw)
 
